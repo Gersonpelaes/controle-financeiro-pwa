@@ -6,7 +6,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken }
 // --- Ícones em SVG para a UI ---
 const ExcelIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M2.5 3A1.5 1.5 0 001 4.5v11A1.5 1.5 0 002.5 17h15a1.5 1.5 0 001.5-1.5v-11A1.5 1.5 0 0017.5 3h-15zm5.793 3.793a1 1 0 011.414 0L12 9.086l2.293-2.293a1 1 0 011.414 1.414L13.414 10.5l2.293 2.293a1 1 0 01-1.414 1.414L12 11.914l-2.293 2.293a1 1 0 01-1.414-1.414L10.586 10.5 8.293 8.207a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
 const PdfIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm4.5 5.5a.5.5 0 01.5.5v2.5a.5.5 0 01-1 0V8a.5.5 0 01.5-.5zM9 11a1 1 0 100-2 1 1 0 000 2zm2.854-3.146a.5.5 0 01.708 0l2 2a.5.5 0 010 .708l-2 2a.5.5 0 11-.708-.708L12.293 11H7.5a.5.5 0 010-1h4.793l-1.147-1.146a.5.5 0 010-.708z" clipRule="evenodd" /></svg>;
-const LogoutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>;
+const LogoutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>;
 const LoadingSpinner = () => <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>;
 const TrashIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
 const EditIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>;
@@ -501,32 +501,33 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
                 totals[method] += Object.values(formData[period][method] || {}).reduce((a, b) => a + b, 0);
             }
         }
-
-        // Add new signed accounts to the 'contaAssinada' total
-        const totalNovasContasAssinadas = (formData.contasAssinadas || []).reduce((acc, c) => acc + c.valor, 0);
-        totals.contaAssinada += totalNovasContasAssinadas;
-
-        // Add receipts from paying off old debts
+        
+        // Add receipts from paying off old debts to their respective payment methods
         (formData.recebimentosContasAssinadas || []).forEach(receipt => {
             if (totals[receipt.formaPagamento] !== undefined) {
                 totals[receipt.formaPagamento] += receipt.valorRecebido;
             }
         });
 
-        const totalBruto = allPaymentMethods.reduce((sum, method) => sum + totals[method], 0);
-        
         const totalFornecedores = (formData.fornecedores || []).reduce((acc, f) => acc + f.valor, 0);
         const totalEntregadores = (formData.entregadores || []).reduce((acc, e) => acc + e.diaria + (e.brotas * formData.deliveryRates.brotas) + (e.torrinha * formData.deliveryRates.torrinha) + (e.retorno * formData.deliveryRates.retorno) + (e.outras * formData.deliveryRates.outras), 0);
         
-        // CORRECTED: totalDespesas no longer includes new signed accounts
+        // Total expenses are only suppliers and deliverers
         const totalDespesas = totalFornecedores + totalEntregadores;
+        
+        // Gross total includes new signed accounts as a form of "revenue"
+        const totalNovasContasAssinadas = (formData.contasAssinadas || []).reduce((acc, c) => acc + c.valor, 0);
+        const totalBruto = allPaymentMethods.reduce((sum, method) => sum + totals[method], 0) + totalNovasContasAssinadas;
         
         const resultadoLiquido = totalBruto - totalDespesas;
         
         const totalSangria = (formData.sangria || []).reduce((acc, s) => acc + s.valor, 0);
         const totalSuprimento = (formData.suprimento || []).reduce((acc, s) => acc + s.valor, 0);
         
-        const caixaFinal = formData.aberturaCaixa + totals.dinheiro - totalSangria + totalSuprimento;
+        const recebimentosDinheiro = (formData.recebimentosContasAssinadas || []).filter(r => r.formaPagamento === 'dinheiro').reduce((sum, r) => sum + r.valorRecebido, 0);
+        const dinheiroVendas = Object.values(formData.almoco.dinheiro).reduce((a,b) => a+b, 0) + Object.values(formData.jantar.dinheiro).reduce((a,b) => a+b, 0);
+
+        const caixaFinal = formData.aberturaCaixa + dinheiroVendas + recebimentosDinheiro + totalSuprimento - totalSangria - totalDespesas;
 
         return { ...totals, totalBruto, totalDespesas, resultadoLiquido, caixaFinal };
     }, [formData]);
@@ -629,8 +630,10 @@ function SalesReportGenerator({ closings, companyName, onShowMessage, exportToPd
                 row[`sales${capitalizedChannel}`] = channelSales;
                 row[`pax${capitalizedChannel}`] = channelPax;
             });
-
-            row.totalDaySales = row.salesSalao + row.salesBalcao + row.salesDelivery;
+            
+            // Adicionar contas assinadas novas ao total de vendas do dia
+            const novasContasAssinadas = (closing.contasAssinadas || []).reduce((sum, item) => sum + item.valor, 0);
+            row.totalDaySales = row.salesSalao + row.salesBalcao + row.salesDelivery + novasContasAssinadas;
             row.totalDayPax = row.paxSalao + row.paxBalcao + row.paxDelivery;
             row.ticketMedioDay = row.totalDayPax > 0 ? row.totalDaySales / row.totalDayPax : 0;
 
@@ -777,7 +780,7 @@ function ExpensesReportGenerator({ closings, beneficiaries, companyName, onShowM
         const totalSuppliers = filtered.reduce((sum, c) => sum + (c.fornecedores || []).reduce((s, f) => s + f.valor, 0), 0);
         const totalDeliverers = filtered.reduce((sum, c) => sum + (c.entregadores || []).reduce((s, d) => s + d.diaria + (d.brotas * c.deliveryRates.brotas) + (d.torrinha * c.deliveryRates.torrinha) + (d.retorno * c.deliveryRates.retorno) + (d.outras * c.deliveryRates.outras), 0), 0);
         const totalSignedAccounts = filtered.reduce((sum, c) => sum + (c.contasAssinadas || []).reduce((s, sa) => s + sa.valor, 0), 0);
-        const grandTotalExpenses = totalSuppliers + totalDeliverers + totalSignedAccounts;
+        const grandTotalExpenses = totalSuppliers + totalDeliverers;
         return { totalSuppliers, totalDeliverers, totalSignedAccounts, grandTotalExpenses };
     }, [selectedMonth, closings]);
 
@@ -787,7 +790,6 @@ function ExpensesReportGenerator({ closings, beneficiaries, companyName, onShowM
         const body = [
             ['Fornecedores', formatCurrencyDisplay(reportData.totalSuppliers)],
             ['Entregadores', formatCurrencyDisplay(reportData.totalDeliverers)],
-            ['Contas Assinadas (Novas)', formatCurrencyDisplay(reportData.totalSignedAccounts)],
         ];
         const footer = [['TOTAL GERAL', formatCurrencyDisplay(reportData.grandTotalExpenses)]];
         exportToPdf(`Relatório de Despesas - ${selectedMonth}`, headers, body, footer, `relatorio_despesas_${companyName}_${selectedMonth}.pdf`);
@@ -804,7 +806,6 @@ function ExpensesReportGenerator({ closings, beneficiaries, companyName, onShowM
             {reportData && <div className="bg-white p-4 rounded-lg shadow-md"><h2 className="text-lg font-bold mb-2">Resumo de Despesas do Mês</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
                 <div className="p-3 bg-gray-100 rounded-lg"><h4 className="text-sm font-semibold text-gray-600">Fornecedores</h4><p className="text-xl font-bold font-accounting text-red-600">{formatCurrencyDisplay(reportData.totalSuppliers)}</p></div>
                 <div className="p-3 bg-gray-100 rounded-lg"><h4 className="text-sm font-semibold text-gray-600">Entregadores</h4><p className="text-xl font-bold font-accounting text-red-600">{formatCurrencyDisplay(reportData.totalDeliverers)}</p></div>
-                <div className="p-3 bg-gray-100 rounded-lg"><h4 className="text-sm font-semibold text-gray-600">Contas Assinadas</h4><p className="text-xl font-bold font-accounting text-red-600">{formatCurrencyDisplay(reportData.totalSignedAccounts)}</p></div>
                 <div className="p-3 bg-red-500 rounded-lg text-white"><h4 className="text-sm font-semibold">TOTAL DESPESAS</h4><p className="text-xl font-bold font-accounting">{formatCurrencyDisplay(reportData.grandTotalExpenses)}</p></div>
             </div></div>}
         </div>
@@ -931,49 +932,14 @@ function SignedAccountsReportGenerator({ closings, beneficiaries, companyName, o
     );
 }
 
-
-function ReportsScreen({ closings, beneficiaries, companyName, onLogout, onShowMessage, exportToPdf, scriptsReady }) {
-    const [reportType, setReportType] = useState('sales'); // 'sales', 'expenses', 'signedAccounts'
-
+const Header = ({ companyName, onLogout }) => {
     return (
-        <div className="p-4 pb-20">
-            <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl font-bold text-white">Relatórios</h1>
-                <button onClick={onLogout} className="flex items-center justify-center bg-gray-500/80 text-white py-2 px-3 rounded-lg shadow hover:bg-gray-600/80 transition"><LogoutIcon className="h-5 w-5"/></button>
-            </div>
-            <div className="flex justify-center bg-white/20 rounded-lg p-1 mb-4">
-                <button onClick={() => setReportType('sales')} className={`w-1/3 py-2 rounded-md font-semibold transition-colors ${reportType === 'sales' ? 'bg-white text-blue-600' : 'text-white'}`}>Vendas</button>
-                <button onClick={() => setReportType('expenses')} className={`w-1/3 py-2 rounded-md font-semibold transition-colors ${reportType === 'expenses' ? 'bg-white text-blue-600' : 'text-white'}`}>Despesas</button>
-                <button onClick={() => setReportType('signedAccounts')} className={`w-1/3 py-2 rounded-md font-semibold transition-colors ${reportType === 'signedAccounts' ? 'bg-white text-blue-600' : 'text-white'}`}>Contas Assinadas</button>
-            </div>
-            <div className="bg-gray-800/50 p-4 rounded-lg backdrop-blur-sm">
-                {reportType === 'sales' && <SalesReportGenerator closings={closings} companyName={companyName} onShowMessage={onShowMessage} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />}
-                {reportType === 'expenses' && <ExpensesReportGenerator closings={closings} beneficiaries={beneficiaries} companyName={companyName} onShowMessage={onShowMessage} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />}
-                {reportType === 'signedAccounts' && <SignedAccountsReportGenerator closings={closings} beneficiaries={beneficiaries} companyName={companyName} onShowMessage={onShowMessage} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />}
-            </div>
-        </div>
-    );
-}
-
-// --- Componente para cadastrar Beneficiário ---
-const BeneficiaryModal = ({ isOpen, onSave, onCancel, showMessage }) => {
-    const [name, setName] = useState('');
-    const handleSave = () => {
-        if (!name.trim()) {
-            showMessage("Erro", "O nome do beneficiário não pode estar em branco.");
-            return;
-        }
-        onSave(name);
-        setName('');
-    };
-
-    return (
-        <Modal isOpen={isOpen} title="Cadastrar Novo Beneficiário" onConfirm={handleSave} onCancel={onCancel} confirmText="Salvar">
-            <div className="text-left">
-                <label htmlFor="beneficiaryName" className="block text-sm font-medium text-gray-700">Nome do Beneficiário</label>
-                <input type="text" id="beneficiaryName" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ex: João da Silva"/>
-            </div>
-        </Modal>
+        <header className="p-4 bg-black/30 backdrop-blur-lg sticky top-0 z-20 flex justify-between items-center">
+            <h1 className="text-xl font-bold text-white">{companyName}</h1>
+            <button onClick={onLogout} className="flex items-center justify-center bg-red-500/80 text-white py-2 px-3 rounded-lg shadow hover:bg-red-600/80 transition">
+                <LogoutIcon />
+            </button>
+        </header>
     );
 };
 
@@ -1155,7 +1121,7 @@ export default function App() {
             currentView = <AddClosingScreen onSave={handleSave} onCancel={() => setActiveView('history')} companyId={authenticatedCompany.id} initialDate={editingDate} beneficiaries={beneficiaries} closings={closings} onAddBeneficiary={() => setIsBeneficiaryModalOpen(true)} />;
             break;
         case 'reports':
-            currentView = <ReportsScreen closings={closings} beneficiaries={beneficiaries} companyName={authenticatedCompany.name} onLogout={handleLogout} onShowMessage={showModal} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />;
+            currentView = <ReportsScreen closings={closings} beneficiaries={beneficiaries} companyName={authenticatedCompany.name} onShowMessage={showModal} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />;
             break;
         case 'history':
         default:
@@ -1167,6 +1133,7 @@ export default function App() {
         <div className="relative min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop')" }}>
              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
              <div className="relative z-10">
+                 <Header companyName={authenticatedCompany.name} onLogout={handleLogout} />
                  <div className="pb-16">{currentView}</div>
                  <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/10 backdrop-blur-lg border-t border-white/20 flex justify-around items-center">
                      <button onClick={() => setActiveView('history')} className={`flex flex-col items-center transition-colors ${activeView === 'history' ? 'text-blue-400' : 'text-gray-300'}`}><HomeIcon className="h-6 w-6" /><span className="text-xs">Histórico</span></button>
