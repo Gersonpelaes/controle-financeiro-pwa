@@ -932,6 +932,52 @@ function SignedAccountsReportGenerator({ closings, beneficiaries, companyName, o
     );
 }
 
+
+function ReportsScreen({ closings, beneficiaries, companyName, onLogout, onShowMessage, exportToPdf, scriptsReady }) {
+    const [reportType, setReportType] = useState('sales'); // 'sales', 'expenses', 'signedAccounts'
+
+    return (
+        <div className="p-4 pb-20">
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-bold text-white">Relatórios</h1>
+                <button onClick={onLogout} className="flex items-center justify-center bg-gray-500/80 text-white py-2 px-3 rounded-lg shadow hover:bg-gray-600/80 transition"><LogoutIcon className="h-5 w-5"/></button>
+            </div>
+            <div className="flex justify-center bg-white/20 rounded-lg p-1 mb-4">
+                <button onClick={() => setReportType('sales')} className={`w-1/3 py-2 rounded-md font-semibold transition-colors ${reportType === 'sales' ? 'bg-white text-blue-600' : 'text-white'}`}>Vendas</button>
+                <button onClick={() => setReportType('expenses')} className={`w-1/3 py-2 rounded-md font-semibold transition-colors ${reportType === 'expenses' ? 'bg-white text-blue-600' : 'text-white'}`}>Despesas</button>
+                <button onClick={() => setReportType('signedAccounts')} className={`w-1/3 py-2 rounded-md font-semibold transition-colors ${reportType === 'signedAccounts' ? 'bg-white text-blue-600' : 'text-white'}`}>Contas Assinadas</button>
+            </div>
+            <div className="bg-gray-800/50 p-4 rounded-lg backdrop-blur-sm">
+                {reportType === 'sales' && <SalesReportGenerator closings={closings} companyName={companyName} onShowMessage={onShowMessage} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />}
+                {reportType === 'expenses' && <ExpensesReportGenerator closings={closings} beneficiaries={beneficiaries} companyName={companyName} onShowMessage={onShowMessage} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />}
+                {reportType === 'signedAccounts' && <SignedAccountsReportGenerator closings={closings} beneficiaries={beneficiaries} companyName={companyName} onShowMessage={onShowMessage} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />}
+            </div>
+        </div>
+    );
+}
+
+// --- Componente para cadastrar Beneficiário ---
+const BeneficiaryModal = ({ isOpen, onSave, onCancel, showMessage }) => {
+    const [name, setName] = useState('');
+    const handleSave = () => {
+        if (!name.trim()) {
+            showMessage("Erro", "O nome do beneficiário não pode estar em branco.");
+            return;
+        }
+        onSave(name);
+        setName('');
+    };
+
+    return (
+        <Modal isOpen={isOpen} title="Cadastrar Novo Beneficiário" onConfirm={handleSave} onCancel={onCancel} confirmText="Salvar">
+            <div className="text-left">
+                <label htmlFor="beneficiaryName" className="block text-sm font-medium text-gray-700">Nome do Beneficiário</label>
+                <input type="text" id="beneficiaryName" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ex: João da Silva"/>
+            </div>
+        </Modal>
+    );
+};
+
 const Header = ({ companyName, onLogout }) => {
     return (
         <header className="p-4 bg-black/30 backdrop-blur-lg sticky top-0 z-20 flex justify-between items-center">
