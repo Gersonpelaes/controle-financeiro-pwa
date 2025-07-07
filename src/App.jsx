@@ -330,7 +330,7 @@ const SignedAccountsTable = ({ data, beneficiaries, onChange, onAdd, onRemove, o
     return (
         <div className="bg-white rounded-lg p-4 shadow-md">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Contas Assinadas (Novas Dívidas)</h3>
+                <h3 className="text-xl font-bold">Contas Assinadas (Vendas a Prazo)</h3>
                 <button type="button" onClick={onAddBeneficiary} className="flex items-center text-sm bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600">
                     <UserPlusIcon className="h-5 w-5 mr-1" />
                     Cadastrar Beneficiário
@@ -370,7 +370,7 @@ const SignedAccountsTable = ({ data, beneficiaries, onChange, onAdd, onRemove, o
                      <tfoot>
                         <tr className="bg-gray-100">
                            <td colSpan="2" className="p-2 text-left font-bold">Total</td>
-                           <td className="p-2 text-left font-extrabold text-lg text-red-600 font-accounting">{formatCurrencyDisplay(grandTotal)}</td>
+                           <td className="p-2 text-left font-extrabold text-lg text-green-600 font-accounting">{formatCurrencyDisplay(grandTotal)}</td>
                            <td></td>
                         </tr>
                     </tfoot>
@@ -420,11 +420,15 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
 
     useEffect(() => {
         const fetchClosingData = async () => {
-            if (!formData.date || !companyId) return;
+            if (!formData.date || !companyId) {
+                setFormData(prev => ({ ...JSON.parse(JSON.stringify(initialClosingData)), date: prev.date }));
+                setIsEditing(false);
+                return;
+            }
 
             // If we just changed the date, isEditing is false, so we fetch.
             // If we are editing, we don't need to re-fetch on every keystroke.
-            if (isEditing) return;
+            if (isEditing && formData.date === initialDate) return;
 
             setIsLoading(true);
             try {
@@ -435,6 +439,9 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
                     const completeData = { ...JSON.parse(JSON.stringify(initialClosingData)), ...data, date: formData.date };
                     setFormData(completeData);
                     setIsEditing(true);
+                } else {
+                    setFormData(prev => ({...JSON.parse(JSON.stringify(initialClosingData)), date: prev.date }));
+                    setIsEditing(false);
                 }
             } catch (error) {
                 console.error("Erro ao buscar fechamento:", error);
@@ -443,7 +450,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
             }
         };
         fetchClosingData();
-    }, [formData.date, companyId, isEditing]);
+    }, [formData.date, companyId]);
     
     const handleReceiptChange = (value, period, field, channel) => {
         setFormData(prev => {
@@ -488,12 +495,18 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         const totals = {};
         allPaymentMethods.forEach(method => totals[method] = 0);
 
+        // Sum receipts from lunch and dinner
         for(const period of ['almoco', 'jantar']) {
             for(const method of allPaymentMethods) {
                 totals[method] += Object.values(formData[period][method] || {}).reduce((a, b) => a + b, 0);
             }
         }
 
+        // Add new signed accounts to the 'contaAssinada' total
+        const totalNovasContasAssinadas = (formData.contasAssinadas || []).reduce((acc, c) => acc + c.valor, 0);
+        totals.contaAssinada += totalNovasContasAssinadas;
+
+        // Add receipts from paying off old debts
         (formData.recebimentosContasAssinadas || []).forEach(receipt => {
             if (totals[receipt.formaPagamento] !== undefined) {
                 totals[receipt.formaPagamento] += receipt.valorRecebido;
@@ -504,9 +517,10 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         
         const totalFornecedores = (formData.fornecedores || []).reduce((acc, f) => acc + f.valor, 0);
         const totalEntregadores = (formData.entregadores || []).reduce((acc, e) => acc + e.diaria + (e.brotas * formData.deliveryRates.brotas) + (e.torrinha * formData.deliveryRates.torrinha) + (e.retorno * formData.deliveryRates.retorno) + (e.outras * formData.deliveryRates.outras), 0);
-        const totalNovasContasAssinadas = (formData.contasAssinadas || []).reduce((acc, c) => acc + c.valor, 0);
         
-        const totalDespesas = totalFornecedores + totalEntregadores + totalNovasContasAssinadas;
+        // CORRECTED: totalDespesas no longer includes new signed accounts
+        const totalDespesas = totalFornecedores + totalEntregadores;
+        
         const resultadoLiquido = totalBruto - totalDespesas;
         
         const totalSangria = (formData.sangria || []).reduce((acc, s) => acc + s.valor, 0);
@@ -1068,8 +1082,14 @@ export default function App() {
     if (!authenticatedCompany) return;
     setLoadingClosings(true);
     
+    // Otimização: Carregar apenas os últimos 90 dias de fechamentos
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const ninetyDaysAgoStr = ninetyDaysAgo.toISOString().slice(0, 10);
+
     const closingsCollectionPath = `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`;
-    const qClosings = query(collection(db, closingsCollectionPath));
+    const qClosings = query(collection(db, closingsCollectionPath), where("date", ">=", ninetyDaysAgoStr));
+    
     const unsubClosings = onSnapshot(qClosings, (snapshot) => {
       const closingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setClosings(closingsData);
