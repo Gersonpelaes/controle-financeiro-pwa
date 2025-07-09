@@ -489,7 +489,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
     };
 
     const removeListItem = (section, index) => { if (formData[section] && formData[section].length > 0) setFormData({ ...formData, [section]: formData[section].filter((_, i) => i !== index) }); };
-    const handleSubmit = (e) => { e.preventDefault(); onSave(formData); };
+    const handleSubmit = (e) => { e.preventDefault(); onSave(formData, showModal); };
     
     const summaryTotals = useMemo(() => {
         const totals = {};
@@ -512,10 +512,8 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         const totalFornecedores = (formData.fornecedores || []).reduce((acc, f) => acc + f.valor, 0);
         const totalEntregadores = (formData.entregadores || []).reduce((acc, e) => acc + e.diaria + (e.brotas * formData.deliveryRates.brotas) + (e.torrinha * formData.deliveryRates.torrinha) + (e.retorno * formData.deliveryRates.retorno) + (e.outras * formData.deliveryRates.outras), 0);
         
-        // Total expenses are only suppliers and deliverers
         const totalDespesas = totalFornecedores + totalEntregadores;
         
-        // Gross total includes new signed accounts as a form of "revenue"
         const totalNovasContasAssinadas = (formData.contasAssinadas || []).reduce((acc, c) => acc + c.valor, 0);
         const totalBruto = allPaymentMethods.reduce((sum, method) => sum + totals[method], 0) + totalNovasContasAssinadas;
         
@@ -932,6 +930,72 @@ function SignedAccountsReportGenerator({ closings, beneficiaries, companyName, o
     );
 }
 
+function DailyCashFlowReport({ closings, companyName, onShowMessage, scriptsReady }) {
+    const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+
+    const reportData = useMemo(() => {
+        const transactions = [];
+        const filteredClosings = closings.filter(c => c.date.startsWith(selectedMonth));
+
+        for (const c of filteredClosings) {
+            const totalDinheiroVendas = Object.values(c.almoco?.dinheiro || {}).reduce((a, b) => a + b, 0) + Object.values(c.jantar?.dinheiro || {}).reduce((a, b) => a + b, 0);
+            if (totalDinheiroVendas > 0) transactions.push({ date: c.date, description: 'Vendas em Dinheiro', value: totalDinheiroVendas });
+
+            (c.recebimentosContasAssinadas || []).forEach(r => {
+                if (r.formaPagamento === 'dinheiro' && r.valorRecebido > 0) {
+                    transactions.push({ date: c.date, description: `Recebimento Conta Assinada`, value: r.valorRecebido });
+                }
+            });
+
+            (c.suprimento || []).forEach(s => {
+                if (s.valor > 0) transactions.push({ date: c.date, description: `Suprimento (${s.responsavel})`, value: s.valor });
+            });
+
+            (c.fornecedores || []).forEach(f => {
+                if (f.valor > 0) transactions.push({ date: c.date, description: `Pag. Fornecedor: ${f.referente}`, value: -f.valor });
+            });
+
+            const totalEntregadores = (c.entregadores || []).reduce((sum, d) => sum + d.diaria + (d.brotas * c.deliveryRates.brotas) + (d.torrinha * c.deliveryRates.torrinha) + (d.retorno * c.deliveryRates.retorno) + (d.outras * c.deliveryRates.outras), 0);
+            if (totalEntregadores > 0) transactions.push({ date: c.date, description: 'Pagamento Entregadores', value: -totalEntregadores });
+
+            (c.sangria || []).forEach(s => {
+                if (s.valor > 0) transactions.push({ date: c.date, description: `Sangria (${s.responsavel})`, value: -s.valor });
+            });
+        }
+        return transactions.sort((a, b) => a.date.localeCompare(b.date));
+    }, [selectedMonth, closings]);
+
+    const handleExportCsv = () => {
+        if (!reportData) return;
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "data,descrição,valor\n";
+        reportData.forEach(row => {
+            const description = `"${row.description.replace(/"/g, '""')}"`; // Handle quotes in description
+            csvContent += `${row.date},${description},${row.value.toFixed(2)}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `movimentacao_caixa_${companyName}_${selectedMonth}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row gap-4 items-center">
+                <h3 className="text-lg font-semibold">Mês:</h3>
+                <input id="month-cashflow" type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="p-2 border rounded-md" />
+                <div className="flex-grow"></div>
+                <button onClick={handleExportCsv} className="w-full sm:w-auto flex items-center justify-center bg-green-600 text-white py-2 px-4 rounded-lg shadow hover:bg-green-700 transition">
+                    <ExcelIcon /> Exportar CSV
+                </button>
+            </div>
+        </div>
+    );
+}
+
 
 function ReportsScreen({ closings, beneficiaries, companyName, onLogout, onShowMessage, exportToPdf, scriptsReady }) {
     const [reportType, setReportType] = useState('sales'); // 'sales', 'expenses', 'signedAccounts'
@@ -940,17 +1004,18 @@ function ReportsScreen({ closings, beneficiaries, companyName, onLogout, onShowM
         <div className="p-4 pb-20">
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold text-white">Relatórios</h1>
-                <button onClick={onLogout} className="flex items-center justify-center bg-gray-500/80 text-white py-2 px-3 rounded-lg shadow hover:bg-gray-600/80 transition"><LogoutIcon className="h-5 w-5"/></button>
             </div>
             <div className="flex justify-center bg-white/20 rounded-lg p-1 mb-4">
-                <button onClick={() => setReportType('sales')} className={`w-1/3 py-2 rounded-md font-semibold transition-colors ${reportType === 'sales' ? 'bg-white text-blue-600' : 'text-white'}`}>Vendas</button>
-                <button onClick={() => setReportType('expenses')} className={`w-1/3 py-2 rounded-md font-semibold transition-colors ${reportType === 'expenses' ? 'bg-white text-blue-600' : 'text-white'}`}>Despesas</button>
-                <button onClick={() => setReportType('signedAccounts')} className={`w-1/3 py-2 rounded-md font-semibold transition-colors ${reportType === 'signedAccounts' ? 'bg-white text-blue-600' : 'text-white'}`}>Contas Assinadas</button>
+                <button onClick={() => setReportType('sales')} className={`w-1/4 py-2 rounded-md font-semibold transition-colors ${reportType === 'sales' ? 'bg-white text-blue-600' : 'text-white'}`}>Vendas</button>
+                <button onClick={() => setReportType('expenses')} className={`w-1/4 py-2 rounded-md font-semibold transition-colors ${reportType === 'expenses' ? 'bg-white text-blue-600' : 'text-white'}`}>Despesas</button>
+                <button onClick={() => setReportType('signedAccounts')} className={`w-1/2 py-2 rounded-md font-semibold transition-colors ${reportType === 'signedAccounts' ? 'bg-white text-blue-600' : 'text-white'}`}>Extrato Contas Assinadas</button>
+                <button onClick={() => setReportType('cashFlow')} className={`w-1/2 py-2 rounded-md font-semibold transition-colors ${reportType === 'cashFlow' ? 'bg-white text-blue-600' : 'text-white'}`}>Movimentação Caixa</button>
             </div>
             <div className="bg-gray-800/50 p-4 rounded-lg backdrop-blur-sm">
                 {reportType === 'sales' && <SalesReportGenerator closings={closings} companyName={companyName} onShowMessage={onShowMessage} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />}
                 {reportType === 'expenses' && <ExpensesReportGenerator closings={closings} beneficiaries={beneficiaries} companyName={companyName} onShowMessage={onShowMessage} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />}
                 {reportType === 'signedAccounts' && <SignedAccountsReportGenerator closings={closings} beneficiaries={beneficiaries} companyName={companyName} onShowMessage={onShowMessage} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />}
+                {reportType === 'cashFlow' && <DailyCashFlowReport closings={closings} companyName={companyName} onShowMessage={onShowMessage} scriptsReady={scriptsReady} />}
             </div>
         </div>
     );
