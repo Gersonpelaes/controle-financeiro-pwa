@@ -34,6 +34,8 @@ const initialCompanies = [
   { id: 'jack_pepira', name: 'Jack Pepira', password: '8522' },
   { id: 'o_forno', name: 'O Forno', password: '9633' },
   { id: 'cafe_catharina', name: 'Café Catharina', password: '1010' },
+  { id: 'emporio_peixaria_brotas', name: 'Empório e Peixaria Brotas', password: '2020' },
+  { id: 'jackburguers', name: 'Jackburguers', password: '3030' },
 ];
 const configDocPath = `artifacts/${appId}/public/data/app_config/companies`;
 
@@ -62,7 +64,7 @@ const initialClosingData = {
         ifoodAiqfome: { salao: 0, balcao: 0, delivery: 0 }, 
         contaAssinada: { salao: 0, balcao: 0, delivery: 0 } 
     },
-    fornecedores: [{ referente: '', valor: 0, categoria: supplierCategories[0] }],
+    pagamentosCaixa: [{ referente: '', valor: 0, categoria: supplierCategories[0] }],
     contasAssinadas: [{ beneficiarioId: '', observacao: '', valor: 0 }],
     recebimentosContasAssinadas: [{ beneficiarioId: '', valorRecebido: 0, formaPagamento: 'dinheiro' }],
     deliveryRates: { brotas: 0, torrinha: 0, retorno: 0, outras: 0 },
@@ -71,13 +73,69 @@ const initialClosingData = {
     suprimento: [{ responsavel: '', valor: 0 }],
 };
 
-// --- Componente de Input de Moeda ---
-const CurrencyInput = ({ value, onChange, className }) => {
-    const format = (num) => `R$ ${(num || 0).toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`;
-    const parse = (str) => Number(str.replace(/\D/g, '')) / 100;
-    const handleChange = (e) => onChange(parse(e.target.value));
-    return <input type="text" value={format(value)} onChange={handleChange} className={`p-2 border rounded-md w-full text-center font-accounting ${className}`} />;
+// --- Componente de Input com Calculadora ---
+const CalculatorInput = ({ value, onChange, className }) => {
+    const [inputValue, setInputValue] = useState('');
+    const inputRef = useRef(null);
+
+    const format = (num) => {
+        if (isNaN(num)) num = 0;
+        return `R$ ${num.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`;
+    };
+
+    const evaluateExpression = (str) => {
+        try {
+            if (!str) return 0;
+            const sanitizedStr = str.replace(/[^0-9.,+\-*/]/g, '').replace(/,/g, '.');
+            if (!sanitizedStr) return 0;
+            const result = new Function('return ' + sanitizedStr)();
+            return typeof result === 'number' && isFinite(result) ? result : 0;
+        } catch (e) {
+            const singleNumber = parseFloat(str.replace(/[^0-9.,]/g, '').replace(',', '.'));
+            return isNaN(singleNumber) ? 0 : singleNumber;
+        }
+    };
+
+    useEffect(() => {
+        if (document.activeElement !== inputRef.current) {
+            setInputValue(format(value));
+        }
+    }, [value]);
+
+    const handleFocus = () => {
+        setInputValue(value === 0 ? '' : String(value).replace('.', ','));
+    };
+
+    const handleChange = (e) => {
+        setInputValue(e.target.value);
+    };
+
+    const handleBlur = () => {
+        const evaluatedValue = evaluateExpression(inputValue);
+        onChange(evaluatedValue);
+    };
+    
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleBlur();
+            e.target.blur();
+        }
+    };
+
+    return (
+        <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onFocus={handleFocus}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            className={`p-2 border rounded-md w-full text-center font-accounting ${className}`}
+        />
+    );
 };
+
 
 // --- Componente de Tela de Login ---
 function LoginScreen({ companies, onLoginSuccess }) {
@@ -167,10 +225,36 @@ const Modal = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Con
 // --- Componentes das Telas ---
 
 function HistoryScreen({ closings, onEdit, onDelete, onAddNew }) {
+    const [searchDate, setSearchDate] = useState('');
     const formatCurrencyDisplay = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const filteredClosings = useMemo(() => {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().slice(0, 10);
+
+        if (searchDate) {
+            return closings.filter(c => c.date === searchDate);
+        }
+        return closings
+            .filter(c => c.date >= thirtyDaysAgoStr)
+            .sort((a, b) => b.date.localeCompare(a.date));
+    }, [closings, searchDate]);
+
     return (
         <div className="p-4">
             <h2 className="text-2xl font-bold text-white mb-4">Histórico de Fechamentos</h2>
+            
+            <div className="bg-white/20 p-3 rounded-lg mb-4 flex flex-col sm:flex-row gap-4 items-center">
+                <div className="flex-grow">
+                    <label htmlFor="searchDate" className="text-white text-sm font-medium">Pesquisar por data:</label>
+                    <input id="searchDate" type="date" value={searchDate} onChange={e => setSearchDate(e.target.value)} className="p-2 border rounded-md w-full mt-1" />
+                </div>
+                <button onClick={() => setSearchDate('')} className="w-full sm:w-auto bg-gray-500 text-white py-2 px-4 rounded-lg shadow hover:bg-gray-600 transition mt-2 sm:mt-6">
+                    Limpar Filtro
+                </button>
+            </div>
+
             <div className="bg-white/90 p-2 rounded-lg shadow-md">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
@@ -182,7 +266,7 @@ function HistoryScreen({ closings, onEdit, onDelete, onAddNew }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {closings.length > 0 ? (closings.map(c => {
+                            {filteredClosings.length > 0 ? (filteredClosings.map(c => {
                                 const sumPeriod = (period) => {
                                     if (!period) return 0;
                                     return allPaymentMethods.reduce((sum, method) => {
@@ -204,7 +288,7 @@ function HistoryScreen({ closings, onEdit, onDelete, onAddNew }) {
                                     </td>
                                 </tr>
                                 )
-                            })) : (<tr><td colSpan="3" className="text-center p-8 text-gray-500">Nenhum fechamento encontrado.</td></tr>)}
+                            })) : (<tr><td colSpan="3" className="text-center p-8 text-gray-500">Nenhum fechamento encontrado para o período.</td></tr>)}
                         </tbody>
                     </table>
                 </div>
@@ -254,7 +338,7 @@ const ReceiptsTable = ({ period, data, onChange }) => {
                                 <td className="p-2 text-left font-medium capitalize">{paymentMethodLabels[method]}</td>
                                 {channels.map(ch => (
                                     <td key={ch} className="p-1">
-                                        <CurrencyInput value={data[method]?.[ch] || 0} onChange={val => onChange(val, period, method, ch)} />
+                                        <CalculatorInput value={data[method]?.[ch] || 0} onChange={val => onChange(val, period, method, ch)} />
                                     </td>
                                 ))}
                                 <td className="p-2 text-right font-bold font-accounting">{formatCurrencyDisplay(Object.values(data[method] || {}).reduce((a, b) => a + b, 0))}</td>
@@ -303,7 +387,7 @@ const DeliverersCostsTable = ({ data, rates, onChange, onAdd, onRemove }) => {
                     return (
                         <tr key={index} className="border-b">
                             <td className="p-1"><input type="text" placeholder="Nome" value={deliverer.nome} onChange={(e) => onChange(e.target.value, 'entregadores', index, 'nome')} className="p-2 border rounded-md w-full"/></td>
-                            <td className="p-1"><CurrencyInput value={deliverer.diaria || 0} onChange={val => onChange(val, 'entregadores', index, 'diaria')} /></td>
+                            <td className="p-1"><CalculatorInput value={deliverer.diaria || 0} onChange={val => onChange(val, 'entregadores', index, 'diaria')} /></td>
                             {costColumns.map(col => (
                                 <td key={col} className="p-1"><input type="number" value={deliverer[col] || 0} onChange={e => onChange(parseFloat(e.target.value) || 0, 'entregadores', index, col)} className="p-2 border rounded-md w-full text-center" /></td>
                             ))}
@@ -359,7 +443,7 @@ const SignedAccountsTable = ({ data, beneficiaries, onChange, onAdd, onRemove, o
                                     <input type="text" placeholder="Observação" value={item.observacao} onChange={(e) => onChange(e.target.value, 'contasAssinadas', index, 'observacao')} className="p-2 border rounded-md w-full" />
                                 </td>
                                 <td className="p-1 w-1/4">
-                                    <CurrencyInput value={item.valor || 0} onChange={val => onChange(val, 'contasAssinadas', index, 'valor')} />
+                                    <CalculatorInput value={item.valor || 0} onChange={val => onChange(val, 'contasAssinadas', index, 'valor')} />
                                 </td>
                                 <td className="p-1 text-center">
                                     <button type="button" onClick={() => onRemove('contasAssinadas', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon /></button>
@@ -476,7 +560,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
     
     const addListItem = (section) => {
         const newItem = {
-            fornecedores: { referente: '', valor: 0, categoria: supplierCategories[0] },
+            pagamentosCaixa: { referente: '', valor: 0, categoria: supplierCategories[0] },
             entregadores: { nome: '', diaria: 0, brotas: 0, torrinha: 0, retorno: 0, outras: 0 },
             sangria: { responsavel: '', valor: 0 },
             suprimento: { responsavel: '', valor: 0 },
@@ -493,7 +577,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         showModal(
             "Confirmar Salvamento",
             "Deseja salvar este fechamento?",
-            () => onSave(formData, showModal)
+            () => onSave(formData)
         );
     };
     
@@ -501,19 +585,24 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         const totals = {};
         allPaymentMethods.forEach(method => totals[method] = 0);
 
+        // Sum receipts from lunch and dinner
         for(const period of ['almoco', 'jantar']) {
             for(const method of allPaymentMethods) {
                 totals[method] += Object.values(formData[period][method] || {}).reduce((a, b) => a + b, 0);
             }
         }
         
-        const recebimentosDinheiro = (formData.recebimentosContasAssinadas || []).filter(r => r.formaPagamento === 'dinheiro').reduce((sum, r) => sum + r.valorRecebido, 0);
-        totals.dinheiro += recebimentosDinheiro;
+        // Add receipts from paying off old debts to their respective payment methods
+        (formData.recebimentosContasAssinadas || []).forEach(receipt => {
+            if (totals[receipt.formaPagamento] !== undefined) {
+                totals[receipt.formaPagamento] += receipt.valorRecebido;
+            }
+        });
 
-        const totalFornecedores = (formData.fornecedores || []).reduce((acc, f) => acc + f.valor, 0);
+        const totalPagamentosCaixa = (formData.pagamentosCaixa || []).reduce((acc, f) => acc + f.valor, 0);
         const totalEntregadores = (formData.entregadores || []).reduce((acc, e) => acc + e.diaria + (e.brotas * formData.deliveryRates.brotas) + (e.torrinha * formData.deliveryRates.torrinha) + (e.retorno * formData.deliveryRates.retorno) + (e.outras * formData.deliveryRates.outras), 0);
         
-        const totalDespesas = totalFornecedores + totalEntregadores;
+        const totalDespesas = totalPagamentosCaixa + totalEntregadores;
         
         const totalNovasContasAssinadas = (formData.contasAssinadas || []).reduce((acc, c) => acc + c.valor, 0);
         const totalBruto = allPaymentMethods.reduce((sum, method) => sum + totals[method], 0) + totalNovasContasAssinadas;
@@ -523,7 +612,10 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         const totalSangria = (formData.sangria || []).reduce((acc, s) => acc + s.valor, 0);
         const totalSuprimento = (formData.suprimento || []).reduce((acc, s) => acc + s.valor, 0);
         
-        const caixaFinal = formData.aberturaCaixa + totals.dinheiro + totalSuprimento - totalSangria - totalDespesas;
+        const recebimentosDinheiro = (formData.recebimentosContasAssinadas || []).filter(r => r.formaPagamento === 'dinheiro').reduce((sum, r) => sum + r.valorRecebido, 0);
+        const dinheiroVendas = Object.values(formData.almoco.dinheiro).reduce((a,b) => a+b, 0) + Object.values(formData.jantar.dinheiro).reduce((a,b) => a+b, 0);
+
+        const caixaFinal = formData.aberturaCaixa + dinheiroVendas + recebimentosDinheiro + totalSuprimento - totalSangria - totalDespesas;
 
         return { ...totals, totalBruto, totalDespesas, resultadoLiquido, caixaFinal };
     }, [formData]);
@@ -532,7 +624,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         <div className="p-4 pb-20">
             <h2 className="text-2xl font-bold text-white mb-4">{isEditing ? 'Editar Fechamento' : 'Novo Fechamento'}</h2>
             <div className="space-y-6"><form onSubmit={handleSubmit}>
-            <div className="bg-white p-4 rounded-lg shadow-md"><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-sm font-medium text-gray-600">Data do Fechamento</label><input type="date" value={formData.date} onChange={handleDateChange} className="p-2 border rounded-md w-full mt-1" required/></div><div><label className="block text-sm font-medium text-gray-600">Abertura de Caixa (R$)</label><CurrencyInput value={formData.aberturaCaixa} onChange={val => setFormData({...formData, aberturaCaixa: val})} /></div></div></div>
+            <div className="bg-white p-4 rounded-lg shadow-md"><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-sm font-medium text-gray-600">Data do Fechamento</label><input type="date" value={formData.date} onChange={handleDateChange} className="p-2 border rounded-md w-full mt-1" required/></div><div><label className="block text-sm font-medium text-gray-600">Abertura de Caixa (R$)</label><CalculatorInput value={formData.aberturaCaixa} onChange={val => setFormData({...formData, aberturaCaixa: val})} /></div></div></div>
             {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner/></div> : (
             <>
             <div className="mt-4"><h3 className="text-xl font-bold mb-2 text-white drop-shadow-md">Recebimentos</h3><div className="grid md:grid-cols-2 gap-4"><ReceiptsTable period="almoco" data={formData.almoco} onChange={handleReceiptChange} /><ReceiptsTable period="jantar" data={formData.jantar} onChange={handleReceiptChange} /></div></div>
@@ -544,22 +636,22 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
                         <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2 items-center">
                             <div className="md:col-span-1"><label className="text-xs text-gray-500">Beneficiário</label><select value={item.beneficiarioId} onChange={(e) => handleListChange(e.target.value, 'recebimentosContasAssinadas', index, 'beneficiarioId')} className="p-2 border rounded-md w-full"><option value="">Selecione</option>{beneficiaries.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
                             <div><label className="text-xs text-gray-500">Dívida Total</label><input type="text" readOnly value={formatCurrencyDisplay(beneficiaryDebts.get(item.beneficiarioId) || 0)} className="p-2 border rounded-md w-full bg-gray-100 text-center" /></div>
-                            <div><label className="text-xs text-gray-500">Valor Recebido</label><CurrencyInput value={item.valorRecebido || 0} onChange={val => handleListChange(val, 'recebimentosContasAssinadas', index, 'valorRecebido')} /></div>
+                            <div><label className="text-xs text-gray-500">Valor Recebido</label><CalculatorInput value={item.valorRecebido || 0} onChange={val => handleListChange(val, 'recebimentosContasAssinadas', index, 'valorRecebido')} /></div>
                             <div className="flex items-end gap-2"><div className="flex-grow"><label className="text-xs text-gray-500">Forma Pag.</label><select value={item.formaPagamento} onChange={(e) => handleListChange(e.target.value, 'recebimentosContasAssinadas', index, 'formaPagamento')} className="p-2 border rounded-md w-full">{allPaymentMethods.map(m => <option key={m} value={m} className="capitalize">{paymentMethodLabels[m]}</option>)}</select></div><button type="button" onClick={() => removeListItem('recebimentosContasAssinadas', index)} className="text-red-500 hover:text-red-700 p-2 mb-1"><TrashIcon/></button></div>
                         </div>
                     ))}
                     <button type="button" onClick={() => addListItem('recebimentosContasAssinadas')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Recebimento</button>
                 </div>
                 <hr/>
-                <div><h4 className="text-lg font-semibold mb-2 text-red-600">Sangria (Saídas)</h4>{formData.sangria.map((item, index) => (<div key={index} className="flex gap-2 mb-2 items-center"><input type="text" placeholder="Responsável" value={item.responsavel} onChange={(e) => handleListChange(e.target.value, 'sangria', index, 'responsavel')} className="p-2 border rounded-md flex-grow"/><CurrencyInput value={item.valor} onChange={val => handleListChange(val, 'sangria', index, 'valor')} className="w-32" /><button type="button" onClick={() => removeListItem('sangria', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></div>))}<button type="button" onClick={() => addListItem('sangria')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Sangria</button></div>
+                <div><h4 className="text-lg font-semibold mb-2 text-red-600">Sangria (Saídas)</h4>{formData.sangria.map((item, index) => (<div key={index} className="flex gap-2 mb-2 items-center"><input type="text" placeholder="Responsável" value={item.responsavel} onChange={(e) => handleListChange(e.target.value, 'sangria', index, 'responsavel')} className="p-2 border rounded-md flex-grow"/><CalculatorInput value={item.valor} onChange={val => handleListChange(val, 'sangria', index, 'valor')} className="w-32" /><button type="button" onClick={() => removeListItem('sangria', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></div>))}<button type="button" onClick={() => addListItem('sangria')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Sangria</button></div>
                 <hr/>
-                <div><h4 className="text-lg font-semibold mb-2 text-green-600">Suprimento (Entradas)</h4>{formData.suprimento.map((item, index) => (<div key={index} className="flex gap-2 mb-2 items-center"><input type="text" placeholder="Responsável" value={item.responsavel} onChange={(e) => handleListChange(e.target.value, 'suprimento', index, 'responsavel')} className="p-2 border rounded-md flex-grow"/><CurrencyInput value={item.valor} onChange={val => handleListChange(val, 'suprimento', index, 'valor')} className="w-32" /><button type="button" onClick={() => removeListItem('suprimento', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></div>))}<button type="button" onClick={() => addListItem('suprimento')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Suprimento</button></div>
+                <div><h4 className="text-lg font-semibold mb-2 text-green-600">Suprimento (Entradas)</h4>{formData.suprimento.map((item, index) => (<div key={index} className="flex gap-2 mb-2 items-center"><input type="text" placeholder="Responsável" value={item.responsavel} onChange={(e) => handleListChange(e.target.value, 'suprimento', index, 'responsavel')} className="p-2 border rounded-md flex-grow"/><CalculatorInput value={item.valor} onChange={val => handleListChange(val, 'suprimento', index, 'valor')} className="w-32" /><button type="button" onClick={() => removeListItem('suprimento', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></div>))}<button type="button" onClick={() => addListItem('suprimento')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Suprimento</button></div>
             </div></div>
 
             <div className="mt-4"><h3 className="text-xl font-bold mb-2 text-white drop-shadow-md">Custos e Despesas</h3><div className="space-y-4">
-                <div className="bg-white p-4 rounded-lg shadow-md"><h4 className="text-lg font-bold mb-4">Fornecedores</h4>{formData.fornecedores.map((item, index) => (<div key={index} className="grid grid-cols-1 gap-2 mb-2"><select value={item.categoria} onChange={(e) => handleListChange(e.target.value, 'fornecedores', index, 'categoria')} className="p-2 border rounded-md w-full"><option disabled>Selecione a Categoria</option>{supplierCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select><input type="text" placeholder="Referente" value={item.referente} onChange={(e) => handleListChange(e.target.value, 'fornecedores', index, 'referente')} className="p-2 border rounded-md w-full"/><div className="flex items-center gap-2"><CurrencyInput value={item.valor} onChange={val => handleListChange(val, 'fornecedores', index, 'valor')} className="flex-grow" /><button type="button" onClick={() => removeListItem('fornecedores', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></div></div>))}<button type="button" onClick={() => addListItem('fornecedores')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Fornecedor</button></div>
+                <div className="bg-white p-4 rounded-lg shadow-md"><h4 className="text-lg font-bold mb-4">Pagamentos Diretos do Caixa</h4>{(formData.pagamentosCaixa || []).map((item, index) => (<div key={index} className="grid grid-cols-1 gap-2 mb-2"><select value={item.categoria} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'categoria')} className="p-2 border rounded-md w-full"><option disabled>Selecione a Categoria</option>{supplierCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select><input type="text" placeholder="Descrição do Pagamento" value={item.referente} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'referente')} className="p-2 border rounded-md w-full"/><div className="flex items-center gap-2"><CalculatorInput value={item.valor} onChange={val => handleListChange(val, 'pagamentosCaixa', index, 'valor')} className="flex-grow" /><button type="button" onClick={() => removeListItem('pagamentosCaixa', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></div></div>))}<button type="button" onClick={() => addListItem('pagamentosCaixa')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Pagamento</button></div>
                 <div><div className="bg-white p-4 rounded-lg shadow-md mb-4"><h4 className="text-lg font-bold mb-4">Valores por Entrega</h4><div className="grid grid-cols-2 gap-4">
-                    {Object.keys(formData.deliveryRates).map(rateKey => (<div key={rateKey}><label className="block text-sm font-medium text-gray-600 capitalize">Valor {rateKey}</label><CurrencyInput value={formData.deliveryRates[rateKey]} onChange={val => setFormData({...formData, deliveryRates: {...formData.deliveryRates, [rateKey]: val}})} /></div>))}
+                    {Object.keys(formData.deliveryRates).map(rateKey => (<div key={rateKey}><label className="block text-sm font-medium text-gray-600 capitalize">Valor {rateKey}</label><CalculatorInput value={formData.deliveryRates[rateKey]} onChange={val => setFormData({...formData, deliveryRates: {...formData.deliveryRates, [rateKey]: val}})} /></div>))}
                 </div></div><DeliverersCostsTable data={formData.entregadores || []} rates={formData.deliveryRates} onChange={handleListChange} onAdd={addListItem} onRemove={removeListItem} /></div>
                 <SignedAccountsTable data={formData.contasAssinadas || []} beneficiaries={beneficiaries} onChange={handleListChange} onAdd={addListItem} onRemove={removeListItem} onAddBeneficiary={onAddBeneficiary} />
             </div></div>
@@ -580,350 +672,6 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
             )}
             <div className="mt-6 flex justify-end gap-4"><button type="submit" className="py-3 px-6 bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-md font-semibold w-full">{isEditing ? "Atualizar Fechamento" : "Salvar Fechamento"}</button></div>
         </form></div>
-        </div>
-    );
-}
-
-function SalesReportGenerator({ closings, companyName, onShowMessage, exportToPdf, scriptsReady }) {
-    const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
-    const formatCurrencyDisplay = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-    const reportData = useMemo(() => {
-        if (!selectedMonth) return null;
-        const closingsMap = new Map();
-        closings.filter(c => c.date.startsWith(selectedMonth)).forEach(c => closingsMap.set(c.date, c));
-
-        const channels = ['salao', 'balcao', 'delivery'];
-
-        const dailyRows = Array.from({ length: new Date(selectedMonth.split('-')[0], selectedMonth.split('-')[1], 0).getDate() }, (_, i) => {
-            const date = new Date(selectedMonth + `-${String(i + 1).padStart(2, '0')}T12:00:00`);
-            const dateStr = date.toISOString().slice(0, 10);
-            const closing = closingsMap.get(dateStr) || {};
-
-            const row = {
-                date: dateStr,
-                salesSalao: 0, paxSalao: 0,
-                salesBalcao: 0, paxBalcao: 0,
-                salesDelivery: 0, paxDelivery: 0,
-                totalDaySales: 0, totalDayPax: 0,
-                ticketMedioDay: 0,
-            };
-
-            channels.forEach(channel => {
-                let channelSales = 0;
-                let channelPax = 0;
-                const capitalizedChannel = channel.charAt(0).toUpperCase() + channel.slice(1);
-
-                ['almoco', 'jantar'].forEach(period => {
-                    if (closing[period]) {
-                        allPaymentMethods.forEach(method => {
-                            channelSales += closing[period][method]?.[channel] || 0;
-                        });
-                        channelPax += closing[period].pax?.[channel] || 0;
-                    }
-                });
-
-                row[`sales${capitalizedChannel}`] = channelSales;
-                row[`pax${capitalizedChannel}`] = channelPax;
-            });
-            
-            // Adicionar contas assinadas novas ao total de vendas do dia
-            const novasContasAssinadas = (closing.contasAssinadas || []).reduce((sum, item) => sum + item.valor, 0);
-            row.totalDaySales = row.salesSalao + row.salesBalcao + row.salesDelivery + novasContasAssinadas;
-            row.totalDayPax = row.paxSalao + row.paxBalcao + row.paxDelivery;
-            row.ticketMedioDay = row.totalDayPax > 0 ? row.totalDaySales / row.totalDayPax : 0;
-
-            return row;
-        });
-
-        const grandTotals = dailyRows.reduce((totals, row) => {
-            totals.salesSalao += row.salesSalao;
-            totals.paxSalao += row.paxSalao;
-            totals.salesBalcao += row.salesBalcao;
-            totals.paxBalcao += row.paxBalcao;
-            totals.salesDelivery += row.salesDelivery;
-            totals.paxDelivery += row.paxDelivery;
-            totals.totalDaySales += row.totalDaySales;
-            totals.totalDayPax += row.totalDayPax;
-            return totals;
-        }, {
-            salesSalao: 0, paxSalao: 0,
-            salesBalcao: 0, paxBalcao: 0,
-            salesDelivery: 0, paxDelivery: 0,
-            totalDaySales: 0, totalDayPax: 0,
-        });
-        
-        grandTotals.ticketMedio = grandTotals.totalDayPax > 0 ? grandTotals.totalDaySales / grandTotals.totalDayPax : 0;
-
-        return { dailyRows, grandTotals };
-    }, [selectedMonth, closings]);
-
-    const handleExportExcel = () => {
-        if (!scriptsReady.xlsx) { onShowMessage("Aguarde", "A biblioteca de exportação Excel ainda não foi carregada."); return; }
-        const formattedData = reportData.dailyRows.map(row => ({
-            'Data': new Date(row.date + 'T12:00:00').toLocaleDateString('pt-BR'),
-            'Vendas Salão': row.salesSalao, 'PAX Salão': row.paxSalao,
-            'Vendas Balcão': row.salesBalcao, 'PAX Balcão': row.paxBalcao,
-            'Vendas Delivery': row.salesDelivery, 'PAX Delivery': row.paxDelivery,
-            'Total Vendas': row.totalDaySales, 'Total PAX': row.totalDayPax,
-            'Ticket Médio': row.ticketMedioDay,
-        }));
-        const totalsRow = {
-            'Data': 'TOTAIS',
-            'Vendas Salão': reportData.grandTotals.salesSalao, 'PAX Salão': reportData.grandTotals.paxSalao,
-            'Vendas Balcão': reportData.grandTotals.salesBalcao, 'PAX Balcão': reportData.grandTotals.paxBalcao,
-            'Vendas Delivery': reportData.grandTotals.salesDelivery, 'PAX Delivery': reportData.grandTotals.paxDelivery,
-            'Total Vendas': reportData.grandTotals.totalDaySales, 'Total PAX': reportData.grandTotals.totalDayPax,
-            'Ticket Médio': reportData.grandTotals.ticketMedio,
-        };
-        const ws = window.XLSX.utils.json_to_sheet([...formattedData, totalsRow]);
-        const wb = window.XLSX.utils.book_new();
-        window.XLSX.utils.book_append_sheet(wb, ws, "Relatório de Vendas");
-        window.XLSX.writeFile(wb, `relatorio_vendas_${companyName}_${selectedMonth}.xlsx`);
-    };
-    
-    const handleExportPdf = () => {
-        if (!scriptsReady.pdf) { onShowMessage("Aguarde", "A biblioteca de exportação PDF ainda não foi carregada."); return; }
-        const head = [
-            [{ content: 'Data', rowSpan: 2, styles: { valign: 'middle'} }, { content: 'Salão', colSpan: 2, styles: { halign: 'center' } }, { content: 'Balcão', colSpan: 2, styles: { halign: 'center' } }, { content: 'Delivery', colSpan: 2, styles: { halign: 'center' } }, { content: 'Totais', colSpan: 3, styles: { halign: 'center' } }],
-            ['Vendas', 'PAX', 'Vendas', 'PAX', 'Vendas', 'PAX', 'Vendas', 'PAX', 'Ticket Médio']
-        ];
-        const body = reportData.dailyRows.map(row => [
-            new Date(row.date + 'T12:00:00').toLocaleDateString('pt-BR'),
-            formatCurrencyDisplay(row.salesSalao), row.paxSalao,
-            formatCurrencyDisplay(row.salesBalcao), row.paxBalcao,
-            formatCurrencyDisplay(row.salesDelivery), row.paxDelivery,
-            formatCurrencyDisplay(row.totalDaySales), row.totalDayPax,
-            formatCurrencyDisplay(row.ticketMedioDay)
-        ]);
-        const footer = [[
-            'TOTAIS',
-            formatCurrencyDisplay(reportData.grandTotals.salesSalao), reportData.grandTotals.paxSalao,
-            formatCurrencyDisplay(reportData.grandTotals.salesBalcao), reportData.grandTotals.paxBalcao,
-            formatCurrencyDisplay(reportData.grandTotals.salesDelivery), reportData.grandTotals.paxDelivery,
-            formatCurrencyDisplay(reportData.grandTotals.totalDaySales), reportData.grandTotals.totalDayPax,
-            formatCurrencyDisplay(reportData.grandTotals.ticketMedio)
-        ]];
-        exportToPdf(`Relatório de Vendas - ${selectedMonth}`, head, body, footer, `relatorio_vendas_${companyName}_${selectedMonth}.pdf`);
-    };
-
-    return (
-        <div className="space-y-4">
-            <div className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row gap-4 items-center">
-                <h3 className="text-lg font-semibold">Mês:</h3>
-                <input id="month" type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="p-2 border rounded-md" />
-                <div className="flex-grow"></div>
-                <button onClick={handleExportPdf} disabled={!scriptsReady.pdf} className="w-full sm:w-auto flex items-center justify-center bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 transition disabled:bg-red-300 disabled:cursor-not-allowed"><PdfIcon /> Exportar PDF</button>
-                <button onClick={handleExportExcel} disabled={!scriptsReady.xlsx} className="w-full sm:w-auto flex items-center justify-center bg-teal-600 text-white py-2 px-4 rounded-lg shadow hover:bg-teal-700 transition disabled:bg-teal-300 disabled:cursor-not-allowed"><ExcelIcon /> Exportar Excel</button>
-            </div>
-            {reportData && <div className="bg-white p-2 sm:p-4 rounded-lg shadow-md"><div className="overflow-x-auto"><table className="w-full text-xs sm:text-sm">
-                <thead className="bg-gray-100">
-                    <tr className="border-b">
-                        <th rowSpan="2" className="p-2 text-left align-bottom font-semibold text-gray-700">Data</th>
-                        <th colSpan="2" className="p-2 text-center font-semibold text-gray-700 border-l border-r">Salão</th>
-                        <th colSpan="2" className="p-2 text-center font-semibold text-gray-700 border-r">Balcão</th>
-                        <th colSpan="2" className="p-2 text-center font-semibold text-gray-700 border-r">Delivery</th>
-                        <th colSpan="3" className="p-2 text-center font-semibold text-gray-700 border-l">Totais</th>
-                    </tr>
-                    <tr className="border-b">
-                        <th className="p-2 text-right font-semibold text-gray-700 border-l">Vendas</th>
-                        <th className="p-2 text-right font-semibold text-gray-700 border-r">PAX</th>
-                        <th className="p-2 text-right font-semibold text-gray-700">Vendas</th>
-                        <th className="p-2 text-right font-semibold text-gray-700 border-r">PAX</th>
-                        <th className="p-2 text-right font-semibold text-gray-700">Vendas</th>
-                        <th className="p-2 text-right font-semibold text-gray-700 border-r">PAX</th>
-                        <th className="p-2 text-right font-semibold text-gray-700 border-l">Vendas</th>
-                        <th className="p-2 text-right font-semibold text-gray-700">PAX</th>
-                        <th className="p-2 text-right font-semibold text-gray-700">Ticket Médio</th>
-                    </tr>
-                </thead>
-                <tbody>{reportData.dailyRows.map(row => (<tr key={row.date} className="border-b hover:bg-gray-50">
-                    <td className="p-2 font-medium">{new Date(row.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</td>
-                    <td className="p-2 text-right font-accounting border-l">{formatCurrencyDisplay(row.salesSalao)}</td>
-                    <td className="p-2 text-right border-r">{row.paxSalao}</td>
-                    <td className="p-2 text-right font-accounting">{formatCurrencyDisplay(row.salesBalcao)}</td>
-                    <td className="p-2 text-right border-r">{row.paxBalcao}</td>
-                    <td className="p-2 text-right font-accounting">{formatCurrencyDisplay(row.salesDelivery)}</td>
-                    <td className="p-2 text-right border-r">{row.paxDelivery}</td>
-                    <td className="p-2 text-right font-accounting font-bold border-l">{formatCurrencyDisplay(row.totalDaySales)}</td>
-                    <td className="p-2 text-right font-bold">{row.totalDayPax}</td>
-                    <td className="p-2 text-right font-accounting font-bold">{formatCurrencyDisplay(row.ticketMedioDay)}</td>
-                </tr>))}</tbody>
-                <tfoot className="bg-gray-200 font-bold"><tr>
-                    <td className="p-2 text-left">TOTAIS</td>
-                    <td className="p-2 text-right font-accounting border-l">{formatCurrencyDisplay(reportData.grandTotals.salesSalao)}</td>
-                    <td className="p-2 text-right border-r">{reportData.grandTotals.paxSalao}</td>
-                    <td className="p-2 text-right font-accounting">{formatCurrencyDisplay(reportData.grandTotals.salesBalcao)}</td>
-                    <td className="p-2 text-right border-r">{reportData.grandTotals.paxBalcao}</td>
-                    <td className="p-2 text-right font-accounting">{formatCurrencyDisplay(reportData.grandTotals.salesDelivery)}</td>
-                    <td className="p-2 text-right border-r">{reportData.grandTotals.paxDelivery}</td>
-                    <td className="p-2 text-right font-accounting text-blue-600 border-l">{formatCurrencyDisplay(reportData.grandTotals.totalDaySales)}</td>
-                    <td className="p-2 text-right text-blue-600">{reportData.grandTotals.totalDayPax}</td>
-                    <td className="p-2 text-right font-accounting text-blue-600">{formatCurrencyDisplay(reportData.grandTotals.ticketMedio)}</td>
-                </tr></tfoot>
-            </table></div></div>}
-        </div>
-    );
-}
-
-function ExpensesReportGenerator({ closings, beneficiaries, companyName, onShowMessage, exportToPdf, scriptsReady }) {
-    const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
-    const formatCurrencyDisplay = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-    const reportData = useMemo(() => {
-        if (!selectedMonth) return null;
-        const filtered = closings.filter(c => c.date.startsWith(selectedMonth));
-        const totalSuppliers = filtered.reduce((sum, c) => sum + (c.fornecedores || []).reduce((s, f) => s + f.valor, 0), 0);
-        const totalDeliverers = filtered.reduce((sum, c) => sum + (c.entregadores || []).reduce((s, d) => s + d.diaria + (d.brotas * c.deliveryRates.brotas) + (d.torrinha * c.deliveryRates.torrinha) + (d.retorno * c.deliveryRates.retorno) + (d.outras * c.deliveryRates.outras), 0), 0);
-        const totalSignedAccounts = filtered.reduce((sum, c) => sum + (c.contasAssinadas || []).reduce((s, sa) => s + sa.valor, 0), 0);
-        const grandTotalExpenses = totalSuppliers + totalDeliverers;
-        return { totalSuppliers, totalDeliverers, totalSignedAccounts, grandTotalExpenses };
-    }, [selectedMonth, closings]);
-
-    const handleExportPdf = () => {
-        if (!scriptsReady.pdf) { onShowMessage("Aguarde", "A biblioteca de exportação PDF ainda não foi carregada."); return; }
-        const headers = [['Categoria de Despesa', 'Valor Total']];
-        const body = [
-            ['Fornecedores', formatCurrencyDisplay(reportData.totalSuppliers)],
-            ['Entregadores', formatCurrencyDisplay(reportData.totalDeliverers)],
-        ];
-        const footer = [['TOTAL GERAL', formatCurrencyDisplay(reportData.grandTotalExpenses)]];
-        exportToPdf(`Relatório de Despesas - ${selectedMonth}`, headers, body, footer, `relatorio_despesas_${companyName}_${selectedMonth}.pdf`);
-    };
-
-    return (
-        <div className="space-y-4">
-            <div className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row gap-4 items-center">
-                <h3 className="text-lg font-semibold">Mês:</h3>
-                <input id="month-expenses" type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="p-2 border rounded-md" />
-                <div className="flex-grow"></div>
-                <button onClick={handleExportPdf} disabled={!scriptsReady.pdf} className="w-full sm:w-auto flex items-center justify-center bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 transition disabled:bg-red-300 disabled:cursor-not-allowed"><PdfIcon /> Exportar PDF</button>
-            </div>
-            {reportData && <div className="bg-white p-4 rounded-lg shadow-md"><h2 className="text-lg font-bold mb-2">Resumo de Despesas do Mês</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-                <div className="p-3 bg-gray-100 rounded-lg"><h4 className="text-sm font-semibold text-gray-600">Fornecedores</h4><p className="text-xl font-bold font-accounting text-red-600">{formatCurrencyDisplay(reportData.totalSuppliers)}</p></div>
-                <div className="p-3 bg-gray-100 rounded-lg"><h4 className="text-sm font-semibold text-gray-600">Entregadores</h4><p className="text-xl font-bold font-accounting text-red-600">{formatCurrencyDisplay(reportData.totalDeliverers)}</p></div>
-                <div className="p-3 bg-red-500 rounded-lg text-white"><h4 className="text-sm font-semibold">TOTAL DESPESAS</h4><p className="text-xl font-bold font-accounting">{formatCurrencyDisplay(reportData.grandTotalExpenses)}</p></div>
-            </div></div>}
-        </div>
-    );
-}
-
-function SignedAccountsReportGenerator({ closings, beneficiaries, companyName, onShowMessage, exportToPdf, scriptsReady }) {
-    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-    const today = new Date().toISOString().slice(0, 10);
-    const [startDate, setStartDate] = useState(firstDayOfMonth);
-    const [endDate, setEndDate] = useState(today);
-    const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState('all');
-
-    const formatCurrencyDisplay = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const beneficiariesMap = useMemo(() => new Map(beneficiaries.map(b => [b.id, b.name])), [beneficiaries]);
-
-    const reportData = useMemo(() => {
-        const transactions = [];
-        const allClosingsSorted = [...closings].sort((a, b) => a.date.localeCompare(b.date));
-        
-        let openingBalance = 0;
-        allClosingsSorted.filter(c => c.date < startDate).forEach(c => {
-            if (selectedBeneficiaryId === 'all' || (c.contasAssinadas || []).some(t => t.beneficiarioId === selectedBeneficiaryId) || (c.pagamentosContasAssinadas || []).some(t => t.beneficiarioId === selectedBeneficiaryId) || (c.recebimentosContasAssinadas || []).some(t => t.beneficiarioId === selectedBeneficiaryId)) {
-                (c.contasAssinadas || []).forEach(t => { if (selectedBeneficiaryId === 'all' || t.beneficiarioId === selectedBeneficiaryId) openingBalance += t.valor; });
-                (c.pagamentosContasAssinadas || []).forEach(t => { if (selectedBeneficiaryId === 'all' || t.beneficiarioId === selectedBeneficiaryId) openingBalance -= t.valorPago; });
-                (c.recebimentosContasAssinadas || []).forEach(t => { if (selectedBeneficiaryId === 'all' || t.beneficiarioId === selectedBeneficiaryId) openingBalance -= t.valorRecebido; });
-            }
-        });
-
-        let runningBalance = openingBalance;
-        allClosingsSorted.filter(c => c.date >= startDate && c.date <= endDate).forEach(c => {
-            const processTransactions = (trans, type, valueField) => {
-                (trans || []).forEach(t => {
-                    if (selectedBeneficiaryId === 'all' || t.beneficiarioId === selectedBeneficiaryId) {
-                        const value = t[valueField];
-                        const isDebit = type === 'Dívida Nova';
-                        runningBalance += isDebit ? value : -value;
-                        transactions.push({ date: c.date, type, value, beneficiaryName: beneficiariesMap.get(t.beneficiarioId) || 'N/A', balance: runningBalance, observacao: t.observacao || `Pagamento via ${t.formaPagamento}` });
-                    }
-                });
-            };
-            processTransactions(c.contasAssinadas, 'Dívida Nova', 'valor');
-            processTransactions(c.pagamentosContasAssinadas, 'Pagamento (Saída)', 'valorPago');
-            processTransactions(c.recebimentosContasAssinadas, 'Recebimento (Entrada)', 'valorRecebido');
-        });
-
-        return { transactions, openingBalance, closingBalance: runningBalance };
-    }, [startDate, endDate, selectedBeneficiaryId, closings, beneficiariesMap]);
-
-    const handleExport = (format) => {
-        if (format === 'pdf' && !scriptsReady.pdf) { onShowMessage("Aguarde", "A biblioteca de exportação PDF ainda não foi carregada."); return; }
-        if (format === 'excel' && !scriptsReady.xlsx) { onShowMessage("Aguarde", "A biblioteca de exportação Excel ainda não foi carregada."); return; }
-
-        const headers = [['Data', 'Beneficiário', 'Tipo/Obs.', 'Débito', 'Crédito', 'Saldo']];
-        const body = reportData.transactions.map(t => {
-            const isDebit = t.type === 'Dívida Nova';
-            return [
-                new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR'),
-                t.beneficiaryName,
-                t.observacao || t.type,
-                isDebit ? formatCurrencyDisplay(t.value) : '',
-                !isDebit ? formatCurrencyDisplay(t.value) : '',
-                formatCurrencyDisplay(t.balance)
-            ];
-        });
-        const summary = [
-            ['', '', 'SALDO INICIAL', '', '', formatCurrencyDisplay(reportData.openingBalance)],
-            ['', '', 'SALDO FINAL', '', '', formatCurrencyDisplay(reportData.closingBalance)]
-        ];
-        
-        const beneficiaryName = selectedBeneficiaryId === 'all' ? 'Todos' : (beneficiariesMap.get(selectedBeneficiaryId) || 'Desconhecido');
-        const fileName = `extrato_contas_${companyName}_${beneficiaryName}`.replace(/ /g, '_');
-
-        if (format === 'pdf') {
-            exportToPdf(`Extrato de Contas Assinadas`, headers, body, summary, `${fileName}.pdf`, true);
-        } else {
-             const dataToExport = [
-                {A: 'SALDO INICIAL', F: reportData.openingBalance},
-                {},
-                {A: 'Data', B: 'Beneficiário', C: 'Tipo/Obs.', D: 'Débito', E: 'Crédito', F: 'Saldo'},
-                ...reportData.transactions.map(t => {
-                    const isDebit = t.type === 'Dívida Nova';
-                    return { A: new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR'), B: t.beneficiaryName, C: t.observacao || t.type, D: isDebit ? t.value : '', E: !isDebit ? t.value : '', F: t.balance };
-                }),
-                {},
-                {A: 'SALDO FINAL', F: reportData.closingBalance}
-            ];
-            const ws = window.XLSX.utils.json_to_sheet(dataToExport, {header: ["A","B","C","D","E","F"], skipHeader: true});
-            const wb = window.XLSX.utils.book_new();
-            window.XLSX.utils.book_append_sheet(wb, ws, "Extrato");
-            window.XLSX.writeFile(wb, `${fileName}.xlsx`);
-        }
-    };
-
-    return (
-        <div className="space-y-4">
-            <div className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row flex-wrap gap-4 items-center">
-                <div className="flex-grow"><label htmlFor="startDate" className="text-sm font-medium text-gray-700">De:</label><input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="p-2 border rounded-md w-full" /></div>
-                <div className="flex-grow"><label htmlFor="endDate" className="text-sm font-medium text-gray-700">Até:</label><input id="endDate" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="p-2 border rounded-md w-full" /></div>
-                <div className="flex-grow"><label htmlFor="beneficiary" className="text-sm font-medium text-gray-700">Beneficiário:</label><select id="beneficiary" value={selectedBeneficiaryId} onChange={e => setSelectedBeneficiaryId(e.target.value)} className="p-2 border rounded-md w-full"><option value="all">Todos</option>{beneficiaries.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
-                <div className="w-full sm:w-auto pt-5 flex gap-2">
-                    <button onClick={() => handleExport('pdf')} disabled={!scriptsReady.pdf} className="w-full sm:w-auto flex items-center justify-center bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 transition disabled:bg-red-300 disabled:cursor-not-allowed"><PdfIcon /> PDF</button>
-                    <button onClick={() => handleExport('excel')} disabled={!scriptsReady.xlsx} className="w-full sm:w-auto flex items-center justify-center bg-teal-600 text-white py-2 px-4 rounded-lg shadow hover:bg-teal-700 transition disabled:bg-teal-300 disabled:cursor-not-allowed"><ExcelIcon /> Excel</button>
-                </div>
-            </div>
-            <div className="bg-white p-2 sm:p-4 rounded-lg shadow-md"><div className="overflow-x-auto"><table className="w-full text-xs sm:text-sm">
-                <thead className="bg-gray-100"><tr className="border-b"><th className="p-2 text-left font-semibold text-gray-700">Data</th><th className="p-2 text-left font-semibold text-gray-700">Tipo/Obs.</th><th className="p-2 text-right font-semibold text-gray-700">Débito</th><th className="p-2 text-right font-semibold text-gray-700">Crédito</th><th className="p-2 text-right font-semibold text-gray-700">Saldo</th></tr></thead>
-                <tbody>
-                    <tr className="border-b bg-gray-50"><td colSpan="4" className="p-2 font-medium">Saldo Inicial</td><td className="p-2 text-right font-bold font-accounting">{formatCurrencyDisplay(reportData.openingBalance)}</td></tr>
-                    {reportData.transactions.map((item, index) => {
-                        const isDebit = item.type === 'Dívida Nova';
-                        return (<tr key={index} className="border-b hover:bg-gray-50">
-                            <td className="p-2">{new Date(item.date + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
-                            <td className="p-2">{item.observacao || item.type}</td>
-                            <td className="p-2 text-right font-accounting text-red-600">{isDebit ? formatCurrencyDisplay(item.value) : ''}</td>
-                            <td className="p-2 text-right font-accounting text-green-600">{!isDebit ? formatCurrencyDisplay(item.value) : ''}</td>
-                            <td className="p-2 text-right font-accounting">{formatCurrencyDisplay(item.balance)}</td>
-                        </tr>)
-                    })}
-                </tbody>
-                <tfoot className="bg-gray-200 font-bold"><tr><td colSpan="4" className="p-2 text-left">SALDO FINAL</td><td className="p-2 text-right font-accounting text-blue-600">{formatCurrencyDisplay(reportData.closingBalance)}</td></tr></tfoot>
-            </table></div></div>
         </div>
     );
 }
@@ -952,8 +700,8 @@ function DailyCashFlowReport({ closings, companyName, onShowMessage, scriptsRead
                 if (s.valor > 0) transactions.push({ date: c.date, description: `Suprimento (${s.responsavel})`, value: s.valor });
             });
 
-            (c.fornecedores || []).forEach(f => {
-                if (f.valor > 0) transactions.push({ date: c.date, description: `Pag. Fornecedor: ${f.referente}`, value: -f.valor });
+            (c.pagamentosCaixa || []).forEach(f => {
+                if (f.valor > 0) transactions.push({ date: c.date, description: `Pag. Direto: ${f.referente}`, value: -f.valor });
             });
 
             const totalEntregadores = (c.entregadores || []).reduce((sum, d) => sum + d.diaria + (d.brotas * c.deliveryRates.brotas) + (d.torrinha * c.deliveryRates.torrinha) + (d.retorno * c.deliveryRates.retorno) + (d.outras * c.deliveryRates.outras), 0);
@@ -1196,13 +944,22 @@ export default function App() {
   const handleLogout = () => { setAuthenticatedCompany(null); setActiveView('history'); };
 
   const handleSave = async (data) => {
-    try {
-        const docId = data.date;
-        const docRef = doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`, docId);
-        await setDoc(docRef, data, { merge: true });
-        showModal("Sucesso!", `Fechamento de ${new Date(data.date + 'T12:00:00').toLocaleDateString('pt-BR')} salvo com sucesso!`);
-    } catch (error) { console.error("Erro ao salvar: ", error); showModal('Erro', 'Ocorreu um erro ao salvar o fechamento.'); }
-    finally { setActiveView('history'); }
+    showModal(
+        "Confirmar Salvamento",
+        "Deseja salvar este fechamento?",
+        async () => {
+            try {
+                const docId = data.date;
+                const docRef = doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`, docId);
+                await setDoc(docRef, data, { merge: true });
+                showModal("Sucesso!", `Fechamento de ${new Date(data.date + 'T12:00:00').toLocaleDateString('pt-BR')} salvo com sucesso!`);
+                setActiveView('history');
+            } catch (error) { 
+                console.error("Erro ao salvar: ", error); 
+                showModal('Erro', 'Ocorreu um erro ao salvar o fechamento.'); 
+            }
+        }
+    );
   };
  
   const handleDelete = async (id, date) => {
