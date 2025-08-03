@@ -80,7 +80,7 @@ const CalculatorInput = ({ value, onChange, className }) => {
 
     const format = (num) => {
         if (isNaN(num)) num = 0;
-        return `R$ ${num.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`;
+        return `R$ ${(num || 0).toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`;
     };
 
     const evaluateExpression = (str) => {
@@ -915,13 +915,9 @@ export default function App() {
     if (!authenticatedCompany) return;
     setLoadingClosings(true);
     
-    // Otimização: Carregar apenas os últimos 90 dias de fechamentos
-    const ninetyDaysAgo = new Date();
-    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-    const ninetyDaysAgoStr = ninetyDaysAgo.toISOString().slice(0, 10);
-
+    // Otimização: Carregar todos os dados, mas o histórico filtra
     const closingsCollectionPath = `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`;
-    const qClosings = query(collection(db, closingsCollectionPath), where("date", ">=", ninetyDaysAgoStr));
+    const qClosings = query(collection(db, closingsCollectionPath));
     
     const unsubClosings = onSnapshot(qClosings, (snapshot) => {
       const closingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -997,11 +993,11 @@ export default function App() {
             currentView = <AddClosingScreen onSave={handleSave} onCancel={() => setActiveView('history')} companyId={authenticatedCompany.id} initialDate={editingDate} beneficiaries={beneficiaries} closings={closings} onAddBeneficiary={() => setIsBeneficiaryModalOpen(true)} showModal={showModal} />;
             break;
         case 'reports':
-            currentView = <ReportsScreen closings={closings} beneficiaries={beneficiaries} companyName={authenticatedCompany.name} onShowMessage={showModal} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />;
+            currentView = <ReportsScreen closings={closings} beneficiaries={beneficiaries} companyName={authenticatedCompany.name} onLogout={handleLogout} onShowMessage={showModal} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />;
             break;
         case 'history':
         default:
-            currentView = <HistoryScreen closings={[...closings].sort((a,b) => b.date.localeCompare(a.date))} onEdit={handleEdit} onDelete={handleDelete} onAddNew={handleAddNew} />;
+            currentView = <HistoryScreen closings={closings} onEdit={handleEdit} onDelete={handleDelete} onAddNew={handleAddNew} />;
             break;
       }
 
