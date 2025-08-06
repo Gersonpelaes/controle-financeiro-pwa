@@ -753,6 +753,350 @@ function DailyCashFlowReport({ closings, companyName, onShowMessage, scriptsRead
     );
 }
 
+function SalesReportGenerator({ closings, companyName, onShowMessage, exportToPdf, scriptsReady }) {
+    const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+    const formatCurrencyDisplay = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const reportData = useMemo(() => {
+        if (!selectedMonth) return null;
+        const closingsMap = new Map();
+        closings.filter(c => c.date.startsWith(selectedMonth)).forEach(c => closingsMap.set(c.date, c));
+
+        const channels = ['salao', 'balcao', 'delivery'];
+
+        const dailyRows = Array.from({ length: new Date(selectedMonth.split('-')[0], selectedMonth.split('-')[1], 0).getDate() }, (_, i) => {
+            const date = new Date(selectedMonth + `-${String(i + 1).padStart(2, '0')}T12:00:00`);
+            const dateStr = date.toISOString().slice(0, 10);
+            const closing = closingsMap.get(dateStr) || {};
+
+            const row = {
+                date: dateStr,
+                salesSalao: 0, paxSalao: 0,
+                salesBalcao: 0, paxBalcao: 0,
+                salesDelivery: 0, paxDelivery: 0,
+                totalDaySales: 0, totalDayPax: 0,
+                ticketMedioDay: 0,
+            };
+
+            channels.forEach(channel => {
+                let channelSales = 0;
+                let channelPax = 0;
+                const capitalizedChannel = channel.charAt(0).toUpperCase() + channel.slice(1);
+
+                ['almoco', 'jantar'].forEach(period => {
+                    if (closing[period]) {
+                        allPaymentMethods.forEach(method => {
+                            channelSales += closing[period][method]?.[channel] || 0;
+                        });
+                        channelPax += closing[period].pax?.[channel] || 0;
+                    }
+                });
+
+                row[`sales${capitalizedChannel}`] = channelSales;
+                row[`pax${capitalizedChannel}`] = channelPax;
+            });
+            
+            // Adicionar contas assinadas novas ao total de vendas do dia
+            const novasContasAssinadas = (closing.contasAssinadas || []).reduce((sum, item) => sum + item.valor, 0);
+            row.totalDaySales = row.salesSalao + row.salesBalcao + row.salesDelivery + novasContasAssinadas;
+            row.totalDayPax = row.paxSalao + row.paxBalcao + row.paxDelivery;
+            row.ticketMedioDay = row.totalDayPax > 0 ? row.totalDaySales / row.totalDayPax : 0;
+
+            return row;
+        });
+
+        const grandTotals = dailyRows.reduce((totals, row) => {
+            totals.salesSalao += row.salesSalao;
+            totals.paxSalao += row.paxSalao;
+            totals.salesBalcao += row.salesBalcao;
+            totals.paxBalcao += row.paxBalcao;
+            totals.salesDelivery += row.salesDelivery;
+            totals.paxDelivery += row.paxDelivery;
+            totals.totalDaySales += row.totalDaySales;
+            totals.totalDayPax += row.totalDayPax;
+            return totals;
+        }, {
+            salesSalao: 0, paxSalao: 0,
+            salesBalcao: 0, paxBalcao: 0,
+            salesDelivery: 0, paxDelivery: 0,
+            totalDaySales: 0, totalDayPax: 0,
+        });
+        
+        grandTotals.ticketMedio = grandTotals.totalDayPax > 0 ? grandTotals.totalDaySales / grandTotals.totalDayPax : 0;
+
+        return { dailyRows, grandTotals };
+    }, [selectedMonth, closings]);
+
+    const handleExportExcel = () => {
+        if (!scriptsReady.xlsx) { onShowMessage("Aguarde", "A biblioteca de exportação Excel ainda não foi carregada."); return; }
+        const formattedData = reportData.dailyRows.map(row => ({
+            'Data': new Date(row.date + 'T12:00:00').toLocaleDateString('pt-BR'),
+            'Vendas Salão': row.salesSalao, 'PAX Salão': row.paxSalao,
+            'Vendas Balcão': row.salesBalcao, 'PAX Balcão': row.paxBalcao,
+            'Vendas Delivery': row.salesDelivery, 'PAX Delivery': row.paxDelivery,
+            'Total Vendas': row.totalDaySales, 'Total PAX': row.totalDayPax,
+            'Ticket Médio': row.ticketMedioDay,
+        }));
+        const totalsRow = {
+            'Data': 'TOTAIS',
+            'Vendas Salão': reportData.grandTotals.salesSalao, 'PAX Salão': reportData.grandTotals.paxSalao,
+            'Vendas Balcão': reportData.grandTotals.salesBalcao, 'PAX Balcão': reportData.grandTotals.paxBalcao,
+            'Vendas Delivery': reportData.grandTotals.salesDelivery, 'PAX Delivery': reportData.grandTotals.paxDelivery,
+            'Total Vendas': reportData.grandTotals.totalDaySales, 'Total PAX': reportData.grandTotals.totalDayPax,
+            'Ticket Médio': reportData.grandTotals.ticketMedio,
+        };
+        const ws = window.XLSX.utils.json_to_sheet([...formattedData, totalsRow]);
+        const wb = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(wb, ws, "Relatório de Vendas");
+        window.XLSX.writeFile(wb, `relatorio_vendas_${companyName}_${selectedMonth}.xlsx`);
+    };
+    
+    const handleExportPdf = () => {
+        if (!scriptsReady.pdf) { onShowMessage("Aguarde", "A biblioteca de exportação PDF ainda não foi carregada."); return; }
+        const head = [
+            [{ content: 'Data', rowSpan: 2, styles: { valign: 'middle'} }, { content: 'Salão', colSpan: 2, styles: { halign: 'center' } }, { content: 'Balcão', colSpan: 2, styles: { halign: 'center' } }, { content: 'Delivery', colSpan: 2, styles: { halign: 'center' } }, { content: 'Totais', colSpan: 3, styles: { halign: 'center' } }],
+            ['Vendas', 'PAX', 'Vendas', 'PAX', 'Vendas', 'PAX', 'Vendas', 'PAX', 'Ticket Médio']
+        ];
+        const body = reportData.dailyRows.map(row => [
+            new Date(row.date + 'T12:00:00').toLocaleDateString('pt-BR'),
+            formatCurrencyDisplay(row.salesSalao), row.paxSalao,
+            formatCurrencyDisplay(row.salesBalcao), row.paxBalcao,
+            formatCurrencyDisplay(row.salesDelivery), row.paxDelivery,
+            formatCurrencyDisplay(row.totalDaySales), row.totalDayPax,
+            formatCurrencyDisplay(row.ticketMedioDay)
+        ]);
+        const footer = [[
+            'TOTAIS',
+            formatCurrencyDisplay(reportData.grandTotals.salesSalao), reportData.grandTotals.paxSalao,
+            formatCurrencyDisplay(reportData.grandTotals.salesBalcao), reportData.grandTotals.paxBalcao,
+            formatCurrencyDisplay(reportData.grandTotals.salesDelivery), reportData.grandTotals.paxDelivery,
+            formatCurrencyDisplay(reportData.grandTotals.totalDaySales), reportData.grandTotals.totalDayPax,
+            formatCurrencyDisplay(reportData.grandTotals.ticketMedio)
+        ]];
+        exportToPdf(`Relatório de Vendas - ${selectedMonth}`, head, body, footer, `relatorio_vendas_${companyName}_${selectedMonth}.pdf`);
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row gap-4 items-center">
+                <h3 className="text-lg font-semibold">Mês:</h3>
+                <input id="month" type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="p-2 border rounded-md" />
+                <div className="flex-grow"></div>
+                <button onClick={handleExportPdf} disabled={!scriptsReady.pdf} className="w-full sm:w-auto flex items-center justify-center bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 transition disabled:bg-red-300 disabled:cursor-not-allowed"><PdfIcon /> Exportar PDF</button>
+                <button onClick={handleExportExcel} disabled={!scriptsReady.xlsx} className="w-full sm:w-auto flex items-center justify-center bg-teal-600 text-white py-2 px-4 rounded-lg shadow hover:bg-teal-700 transition disabled:bg-teal-300 disabled:cursor-not-allowed"><ExcelIcon /> Exportar Excel</button>
+            </div>
+            {reportData && <div className="bg-white p-2 sm:p-4 rounded-lg shadow-md"><div className="overflow-x-auto"><table className="w-full text-xs sm:text-sm">
+                <thead className="bg-gray-100">
+                    <tr className="border-b">
+                        <th rowSpan="2" className="p-2 text-left align-bottom font-semibold text-gray-700">Data</th>
+                        <th colSpan="2" className="p-2 text-center font-semibold text-gray-700 border-l border-r">Salão</th>
+                        <th colSpan="2" className="p-2 text-center font-semibold text-gray-700 border-r">Balcão</th>
+                        <th colSpan="2" className="p-2 text-center font-semibold text-gray-700 border-r">Delivery</th>
+                        <th colSpan="3" className="p-2 text-center font-semibold text-gray-700 border-l">Totais</th>
+                    </tr>
+                    <tr className="border-b">
+                        <th className="p-2 text-right font-semibold text-gray-700 border-l">Vendas</th>
+                        <th className="p-2 text-right font-semibold text-gray-700 border-r">PAX</th>
+                        <th className="p-2 text-right font-semibold text-gray-700">Vendas</th>
+                        <th className="p-2 text-right font-semibold text-gray-700 border-r">PAX</th>
+                        <th className="p-2 text-right font-semibold text-gray-700">Vendas</th>
+                        <th className="p-2 text-right font-semibold text-gray-700 border-r">PAX</th>
+                        <th className="p-2 text-right font-semibold text-gray-700 border-l">Vendas</th>
+                        <th className="p-2 text-right font-semibold text-gray-700">PAX</th>
+                        <th className="p-2 text-right font-semibold text-gray-700">Ticket Médio</th>
+                    </tr>
+                </thead>
+                <tbody>{reportData.dailyRows.map(row => (<tr key={row.date} className="border-b hover:bg-gray-50">
+                    <td className="p-2 font-medium">{new Date(row.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</td>
+                    <td className="p-2 text-right font-accounting border-l">{formatCurrencyDisplay(row.salesSalao)}</td>
+                    <td className="p-2 text-right border-r">{row.paxSalao}</td>
+                    <td className="p-2 text-right font-accounting">{formatCurrencyDisplay(row.salesBalcao)}</td>
+                    <td className="p-2 text-right border-r">{row.paxBalcao}</td>
+                    <td className="p-2 text-right font-accounting">{formatCurrencyDisplay(row.salesDelivery)}</td>
+                    <td className="p-2 text-right border-r">{row.paxDelivery}</td>
+                    <td className="p-2 text-right font-accounting font-bold border-l">{formatCurrencyDisplay(row.totalDaySales)}</td>
+                    <td className="p-2 text-right font-bold">{row.totalDayPax}</td>
+                    <td className="p-2 text-right font-accounting font-bold">{formatCurrencyDisplay(row.ticketMedioDay)}</td>
+                </tr>))}</tbody>
+                <tfoot className="bg-gray-200 font-bold"><tr>
+                    <td className="p-2 text-left">TOTAIS</td>
+                    <td className="p-2 text-right font-accounting border-l">{formatCurrencyDisplay(reportData.grandTotals.salesSalao)}</td>
+                    <td className="p-2 text-right border-r">{reportData.grandTotals.paxSalao}</td>
+                    <td className="p-2 text-right font-accounting">{formatCurrencyDisplay(reportData.grandTotals.salesBalcao)}</td>
+                    <td className="p-2 text-right border-r">{reportData.grandTotals.paxBalcao}</td>
+                    <td className="p-2 text-right font-accounting">{formatCurrencyDisplay(reportData.grandTotals.salesDelivery)}</td>
+                    <td className="p-2 text-right border-r">{reportData.grandTotals.paxDelivery}</td>
+                    <td className="p-2 text-right font-accounting text-blue-600 border-l">{formatCurrencyDisplay(reportData.grandTotals.totalDaySales)}</td>
+                    <td className="p-2 text-right text-blue-600">{reportData.grandTotals.totalDayPax}</td>
+                    <td className="p-2 text-right font-accounting text-blue-600">{formatCurrencyDisplay(reportData.grandTotals.ticketMedio)}</td>
+                </tr></tfoot>
+            </table></div></div>}
+        </div>
+    );
+}
+
+function ExpensesReportGenerator({ closings, beneficiaries, companyName, onShowMessage, exportToPdf, scriptsReady }) {
+    const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+    const formatCurrencyDisplay = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const reportData = useMemo(() => {
+        if (!selectedMonth) return null;
+        const filtered = closings.filter(c => c.date.startsWith(selectedMonth));
+        const totalSuppliers = filtered.reduce((sum, c) => sum + (c.fornecedores || []).reduce((s, f) => s + f.valor, 0), 0);
+        const totalDeliverers = filtered.reduce((sum, c) => sum + (c.entregadores || []).reduce((s, d) => s + d.diaria + (d.brotas * c.deliveryRates.brotas) + (d.torrinha * c.deliveryRates.torrinha) + (d.retorno * c.deliveryRates.retorno) + (d.outras * c.deliveryRates.outras), 0), 0);
+        const totalSignedAccounts = filtered.reduce((sum, c) => sum + (c.contasAssinadas || []).reduce((s, sa) => s + sa.valor, 0), 0);
+        const grandTotalExpenses = totalSuppliers + totalDeliverers;
+        return { totalSuppliers, totalDeliverers, totalSignedAccounts, grandTotalExpenses };
+    }, [selectedMonth, closings]);
+
+    const handleExportPdf = () => {
+        if (!scriptsReady.pdf) { onShowMessage("Aguarde", "A biblioteca de exportação PDF ainda não foi carregada."); return; }
+        const headers = [['Categoria de Despesa', 'Valor Total']];
+        const body = [
+            ['Fornecedores', formatCurrencyDisplay(reportData.totalSuppliers)],
+            ['Entregadores', formatCurrencyDisplay(reportData.totalDeliverers)],
+        ];
+        const footer = [['TOTAL GERAL', formatCurrencyDisplay(reportData.grandTotalExpenses)]];
+        exportToPdf(`Relatório de Despesas - ${selectedMonth}`, headers, body, footer, `relatorio_despesas_${companyName}_${selectedMonth}.pdf`);
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row gap-4 items-center">
+                <h3 className="text-lg font-semibold">Mês:</h3>
+                <input id="month-expenses" type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="p-2 border rounded-md" />
+                <div className="flex-grow"></div>
+                <button onClick={handleExportPdf} disabled={!scriptsReady.pdf} className="w-full sm:w-auto flex items-center justify-center bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 transition disabled:bg-red-300 disabled:cursor-not-allowed"><PdfIcon /> Exportar PDF</button>
+            </div>
+            {reportData && <div className="bg-white p-4 rounded-lg shadow-md"><h2 className="text-lg font-bold mb-2">Resumo de Despesas do Mês</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                <div className="p-3 bg-gray-100 rounded-lg"><h4 className="text-sm font-semibold text-gray-600">Fornecedores</h4><p className="text-xl font-bold font-accounting text-red-600">{formatCurrencyDisplay(reportData.totalSuppliers)}</p></div>
+                <div className="p-3 bg-gray-100 rounded-lg"><h4 className="text-sm font-semibold text-gray-600">Entregadores</h4><p className="text-xl font-bold font-accounting text-red-600">{formatCurrencyDisplay(reportData.totalDeliverers)}</p></div>
+                <div className="p-3 bg-red-500 rounded-lg text-white"><h4 className="text-sm font-semibold">TOTAL DESPESAS</h4><p className="text-xl font-bold font-accounting">{formatCurrencyDisplay(reportData.grandTotalExpenses)}</p></div>
+            </div></div>}
+        </div>
+    );
+}
+
+function SignedAccountsReportGenerator({ closings, beneficiaries, companyName, onShowMessage, exportToPdf, scriptsReady }) {
+    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+    const today = new Date().toISOString().slice(0, 10);
+    const [startDate, setStartDate] = useState(firstDayOfMonth);
+    const [endDate, setEndDate] = useState(today);
+    const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState('all');
+
+    const formatCurrencyDisplay = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const beneficiariesMap = useMemo(() => new Map(beneficiaries.map(b => [b.id, b.name])), [beneficiaries]);
+
+    const reportData = useMemo(() => {
+        const transactions = [];
+        const allClosingsSorted = [...closings].sort((a, b) => a.date.localeCompare(b.date));
+        
+        let openingBalance = 0;
+        allClosingsSorted.filter(c => c.date < startDate).forEach(c => {
+            if (selectedBeneficiaryId === 'all' || (c.contasAssinadas || []).some(t => t.beneficiarioId === selectedBeneficiaryId) || (c.pagamentosContasAssinadas || []).some(t => t.beneficiarioId === selectedBeneficiaryId) || (c.recebimentosContasAssinadas || []).some(t => t.beneficiarioId === selectedBeneficiaryId)) {
+                (c.contasAssinadas || []).forEach(t => { if (selectedBeneficiaryId === 'all' || t.beneficiarioId === selectedBeneficiaryId) openingBalance += t.valor; });
+                (c.pagamentosContasAssinadas || []).forEach(t => { if (selectedBeneficiaryId === 'all' || t.beneficiarioId === selectedBeneficiaryId) openingBalance -= t.valorPago; });
+                (c.recebimentosContasAssinadas || []).forEach(t => { if (selectedBeneficiaryId === 'all' || t.beneficiarioId === selectedBeneficiaryId) openingBalance -= t.valorRecebido; });
+            }
+        });
+
+        let runningBalance = openingBalance;
+        allClosingsSorted.filter(c => c.date >= startDate && c.date <= endDate).forEach(c => {
+            const processTransactions = (trans, type, valueField) => {
+                (trans || []).forEach(t => {
+                    if (selectedBeneficiaryId === 'all' || t.beneficiarioId === selectedBeneficiaryId) {
+                        const value = t[valueField];
+                        const isDebit = type === 'Dívida Nova';
+                        runningBalance += isDebit ? value : -value;
+                        transactions.push({ date: c.date, type, value, beneficiaryName: beneficiariesMap.get(t.beneficiarioId) || 'N/A', balance: runningBalance, observacao: t.observacao || `Pagamento via ${t.formaPagamento}` });
+                    }
+                });
+            };
+            processTransactions(c.contasAssinadas, 'Dívida Nova', 'valor');
+            processTransactions(c.pagamentosContasAssinadas, 'Pagamento (Saída)', 'valorPago');
+            processTransactions(c.recebimentosContasAssinadas, 'Recebimento (Entrada)', 'valorRecebido');
+        });
+
+        return { transactions, openingBalance, closingBalance: runningBalance };
+    }, [startDate, endDate, selectedBeneficiaryId, closings, beneficiariesMap]);
+
+    const handleExport = (format) => {
+        if (format === 'pdf' && !scriptsReady.pdf) { onShowMessage("Aguarde", "A biblioteca de exportação PDF ainda não foi carregada."); return; }
+        if (format === 'excel' && !scriptsReady.xlsx) { onShowMessage("Aguarde", "A biblioteca de exportação Excel ainda não foi carregada."); return; }
+
+        const headers = [['Data', 'Beneficiário', 'Tipo/Obs.', 'Débito', 'Crédito', 'Saldo']];
+        const body = reportData.transactions.map(t => {
+            const isDebit = t.type === 'Dívida Nova';
+            return [
+                new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR'),
+                t.beneficiaryName,
+                t.observacao || t.type,
+                isDebit ? formatCurrencyDisplay(t.value) : '',
+                !isDebit ? formatCurrencyDisplay(t.value) : '',
+                formatCurrencyDisplay(t.balance)
+            ];
+        });
+        const summary = [
+            ['', '', 'SALDO INICIAL', '', '', formatCurrencyDisplay(reportData.openingBalance)],
+            ['', '', 'SALDO FINAL', '', '', formatCurrencyDisplay(reportData.closingBalance)]
+        ];
+        
+        const beneficiaryName = selectedBeneficiaryId === 'all' ? 'Todos' : (beneficiariesMap.get(selectedBeneficiaryId) || 'Desconhecido');
+        const fileName = `extrato_contas_${companyName}_${beneficiaryName}`.replace(/ /g, '_');
+
+        if (format === 'pdf') {
+            exportToPdf(`Extrato de Contas Assinadas`, headers, body, summary, `${fileName}.pdf`, true);
+        } else {
+             const dataToExport = [
+                {A: 'SALDO INICIAL', F: reportData.openingBalance},
+                {},
+                {A: 'Data', B: 'Beneficiário', C: 'Tipo/Obs.', D: 'Débito', E: 'Crédito', F: 'Saldo'},
+                ...reportData.transactions.map(t => {
+                    const isDebit = t.type === 'Dívida Nova';
+                    return { A: new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR'), B: t.beneficiaryName, C: t.observacao || t.type, D: isDebit ? t.value : '', E: !isDebit ? t.value : '', F: t.balance };
+                }),
+                {},
+                {A: 'SALDO FINAL', F: reportData.closingBalance}
+            ];
+            const ws = window.XLSX.utils.json_to_sheet(dataToExport, {header: ["A","B","C","D","E","F"], skipHeader: true});
+            const wb = window.XLSX.utils.book_new();
+            window.XLSX.utils.book_append_sheet(wb, ws, "Extrato");
+            window.XLSX.writeFile(wb, `${fileName}.xlsx`);
+        }
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row flex-wrap gap-4 items-center">
+                <div className="flex-grow"><label htmlFor="startDate" className="text-sm font-medium text-gray-700">De:</label><input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="p-2 border rounded-md w-full" /></div>
+                <div className="flex-grow"><label htmlFor="endDate" className="text-sm font-medium text-gray-700">Até:</label><input id="endDate" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="p-2 border rounded-md w-full" /></div>
+                <div className="flex-grow"><label htmlFor="beneficiary" className="text-sm font-medium text-gray-700">Beneficiário:</label><select id="beneficiary" value={selectedBeneficiaryId} onChange={e => setSelectedBeneficiaryId(e.target.value)} className="p-2 border rounded-md w-full"><option value="all">Todos</option>{beneficiaries.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
+                <div className="w-full sm:w-auto pt-5 flex gap-2">
+                    <button onClick={() => handleExport('pdf')} disabled={!scriptsReady.pdf} className="w-full sm:w-auto flex items-center justify-center bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 transition disabled:bg-red-300 disabled:cursor-not-allowed"><PdfIcon /> PDF</button>
+                    <button onClick={() => handleExport('excel')} disabled={!scriptsReady.xlsx} className="w-full sm:w-auto flex items-center justify-center bg-teal-600 text-white py-2 px-4 rounded-lg shadow hover:bg-teal-700 transition disabled:bg-teal-300 disabled:cursor-not-allowed"><ExcelIcon /> Excel</button>
+                </div>
+            </div>
+            <div className="bg-white p-2 sm:p-4 rounded-lg shadow-md"><div className="overflow-x-auto"><table className="w-full text-xs sm:text-sm">
+                <thead className="bg-gray-100"><tr className="border-b"><th className="p-2 text-left font-semibold text-gray-700">Data</th><th className="p-2 text-left font-semibold text-gray-700">Tipo/Obs.</th><th className="p-2 text-right font-semibold text-gray-700">Débito</th><th className="p-2 text-right font-semibold text-gray-700">Crédito</th><th className="p-2 text-right font-semibold text-gray-700">Saldo</th></tr></thead>
+                <tbody>
+                    <tr className="border-b bg-gray-50"><td colSpan="4" className="p-2 font-medium">Saldo Inicial</td><td className="p-2 text-right font-bold font-accounting">{formatCurrencyDisplay(reportData.openingBalance)}</td></tr>
+                    {reportData.transactions.map((item, index) => {
+                        const isDebit = item.type === 'Dívida Nova';
+                        return (<tr key={index} className="border-b hover:bg-gray-50">
+                            <td className="p-2">{new Date(item.date + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
+                            <td className="p-2">{item.observacao || item.type}</td>
+                            <td className="p-2 text-right font-accounting text-red-600">{isDebit ? formatCurrencyDisplay(item.value) : ''}</td>
+                            <td className="p-2 text-right font-accounting text-green-600">{!isDebit ? formatCurrencyDisplay(item.value) : ''}</td>
+                            <td className="p-2 text-right font-accounting">{formatCurrencyDisplay(item.balance)}</td>
+                        </tr>)
+                    })}
+                </tbody>
+                <tfoot className="bg-gray-200 font-bold"><tr><td colSpan="4" className="p-2 text-left">SALDO FINAL</td><td className="p-2 text-right font-accounting text-blue-600">{formatCurrencyDisplay(reportData.closingBalance)}</td></tr></tfoot>
+            </table></div></div>
+        </div>
+    );
+}
+
 
 function ReportsScreen({ closings, beneficiaries, companyName, onLogout, onShowMessage, exportToPdf, scriptsReady }) {
     const [reportType, setReportType] = useState('sales'); // 'sales', 'expenses', 'signedAccounts', 'cashFlow'
