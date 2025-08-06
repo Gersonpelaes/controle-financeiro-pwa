@@ -17,7 +17,7 @@ const UserPlusIcon = (props) => <svg {...props} xmlns="http://www.w3.org/2000/sv
 
 
 // --- Configuração do Firebase ---
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { projectId: "YOUR_PROJECT_ID_FALLBACK" };
+const firebaseConfig = import.meta.env.VITE_FIREBASE_CONFIG ? JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG) : { projectId: "YOUR_PROJECT_ID_FALLBACK" };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -166,11 +166,8 @@ function LoginScreen({ companies, onLoginSuccess }) {
                 <h1 className="text-4xl font-bold text-white drop-shadow-lg mb-2">Controle Financeiro</h1>
                 <p className="text-gray-300 mb-8 drop-shadow-md">Acesse o painel do seu restaurante.</p>
                 <form onSubmit={handleLogin} className="space-y-4">
-                    {/* Input de usuário escondido para acessibilidade */}
-                    <input type="text" name="username" autoComplete="username" className="hidden" />
                     <input
                         type="password"
-                        name="password"
                         autoComplete="current-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -536,7 +533,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
             }
         };
         fetchClosingData();
-    }, [formData.date, companyId, initialDate, isEditing]);
+    }, [formData.date, companyId]);
     
     const handleReceiptChange = (value, period, field, channel) => {
         setFormData(prev => {
@@ -680,233 +677,6 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
     );
 }
 
-// --- Componentes Geradores de Relatório ---
-
-function SalesReportGenerator({ closings, companyName, onShowMessage, exportToPdf, scriptsReady }) {
-    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-    const today = new Date().toISOString().slice(0, 10);
-    const [startDate, setStartDate] = useState(firstDayOfMonth);
-    const [endDate, setEndDate] = useState(today);
-
-    const { salesData, grandTotal } = useMemo(() => {
-        const sales = {};
-        allPaymentMethods.forEach(m => sales[m] = 0);
-        
-        const filtered = closings.filter(c => c.date >= startDate && c.date <= endDate);
-        filtered.forEach(c => {
-            ['almoco', 'jantar'].forEach(period => {
-                allPaymentMethods.forEach(method => {
-                    sales[method] += Object.values(c[period]?.[method] || {}).reduce((a, b) => a + b, 0);
-                });
-            });
-        });
-
-        const grandTotal = Object.values(sales).reduce((a, b) => a + b, 0);
-        return { salesData: sales, grandTotal };
-    }, [startDate, endDate, closings]);
-
-    const handleExport = (format) => {
-        if (!scriptsReady.pdf || !scriptsReady.xlsx) {
-            onShowMessage("Aguarde", "As bibliotecas de exportação ainda estão carregando.");
-            return;
-        }
-
-        const title = `Relatório de Vendas - ${companyName}`;
-        const fileName = `relatorio_vendas_${companyName}_${startDate}_a_${endDate}`;
-        const head = [['Forma de Pagamento', 'Total (R$)']];
-        const body = Object.entries(salesData).map(([key, value]) => [
-            paymentMethodLabels[key], 
-            value.toFixed(2)
-        ]);
-        const foot = [['Total Geral', grandTotal.toFixed(2)]];
-
-        if (format === 'pdf') {
-            exportToPdf(title, head, body, foot, `${fileName}.pdf`);
-        } else {
-            const ws = window.XLSX.utils.json_to_sheet([
-                ...Object.entries(salesData).map(([key, value]) => ({ 'Forma de Pagamento': paymentMethodLabels[key], 'Total (R$)': value })),
-                { 'Forma de Pagamento': 'Total Geral', 'Total (R$)': grandTotal }
-            ]);
-            const wb = window.XLSX.utils.book_new();
-            window.XLSX.utils.book_append_sheet(wb, ws, "Vendas");
-            window.XLSX.utils.writeFile(wb, `${fileName}.xlsx`);
-        }
-    };
-
-    return (
-        <div className="space-y-4">
-            <div className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row flex-wrap gap-4 items-center">
-                <div className="flex-grow"><label htmlFor="startDateSales" className="text-sm font-medium text-gray-700">De:</label><input id="startDateSales" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="p-2 border rounded-md w-full" /></div>
-                <div className="flex-grow"><label htmlFor="endDateSales" className="text-sm font-medium text-gray-700">Até:</label><input id="endDateSales" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="p-2 border rounded-md w-full" /></div>
-                <div className="w-full sm:w-auto pt-5 flex gap-2">
-                    <button onClick={() => handleExport('csv')} className="w-full sm:w-auto flex items-center justify-center bg-green-600 text-white py-2 px-4 rounded-lg shadow hover:bg-green-700 transition"><ExcelIcon /> CSV</button>
-                    <button onClick={() => handleExport('pdf')} className="w-full sm:w-auto flex items-center justify-center bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 transition"><PdfIcon /> PDF</button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function ExpensesReportGenerator({ closings, companyName, onShowMessage, exportToPdf, scriptsReady }) {
-    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-    const today = new Date().toISOString().slice(0, 10);
-    const [startDate, setStartDate] = useState(firstDayOfMonth);
-    const [endDate, setEndDate] = useState(today);
-
-    const { expensesByCategory, grandTotal } = useMemo(() => {
-        const expenses = {};
-        supplierCategories.forEach(c => expenses[c] = 0);
-        expenses['Entregadores'] = 0;
-
-        const filtered = closings.filter(c => c.date >= startDate && c.date <= endDate);
-        filtered.forEach(c => {
-            (c.pagamentosCaixa || []).forEach(p => {
-                if (expenses[p.categoria] !== undefined) {
-                    expenses[p.categoria] += p.valor;
-                }
-            });
-            const totalEntregadores = (c.entregadores || []).reduce((sum, d) => sum + d.diaria + (d.brotas * c.deliveryRates.brotas) + (d.torrinha * c.deliveryRates.torrinha) + (d.retorno * c.deliveryRates.retorno) + (d.outras * c.deliveryRates.outras), 0);
-            expenses['Entregadores'] += totalEntregadores;
-        });
-        const grandTotal = Object.values(expenses).reduce((a, b) => a + b, 0);
-        return { expensesByCategory: expenses, grandTotal };
-    }, [startDate, endDate, closings]);
-    
-    const handleExport = (format) => {
-        if (!scriptsReady.pdf || !scriptsReady.xlsx) {
-            onShowMessage("Aguarde", "As bibliotecas de exportação ainda estão carregando.");
-            return;
-        }
-
-        const title = `Relatório de Despesas - ${companyName}`;
-        const fileName = `relatorio_despesas_${companyName}_${startDate}_a_${endDate}`;
-        const head = [['Categoria', 'Total (R$)']];
-        const body = Object.entries(expensesByCategory).map(([key, value]) => [key, value.toFixed(2)]);
-        const foot = [['Total Geral', grandTotal.toFixed(2)]];
-
-        if (format === 'pdf') {
-            exportToPdf(title, head, body, foot, `${fileName}.pdf`);
-        } else {
-             const ws = window.XLSX.utils.json_to_sheet([
-                ...Object.entries(expensesByCategory).map(([key, value]) => ({ 'Categoria': key, 'Total (R$)': value })),
-                { 'Categoria': 'Total Geral', 'Total (R$)': grandTotal }
-            ]);
-            const wb = window.XLSX.utils.book_new();
-            window.XLSX.utils.book_append_sheet(wb, ws, "Despesas");
-            window.XLSX.utils.writeFile(wb, `${fileName}.xlsx`);
-        }
-    };
-
-     return (
-        <div className="space-y-4">
-            <div className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row flex-wrap gap-4 items-center">
-                <div className="flex-grow"><label htmlFor="startDateExp" className="text-sm font-medium text-gray-700">De:</label><input id="startDateExp" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="p-2 border rounded-md w-full" /></div>
-                <div className="flex-grow"><label htmlFor="endDateExp" className="text-sm font-medium text-gray-700">Até:</label><input id="endDateExp" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="p-2 border rounded-md w-full" /></div>
-                <div className="w-full sm:w-auto pt-5 flex gap-2">
-                    <button onClick={() => handleExport('csv')} className="w-full sm:w-auto flex items-center justify-center bg-green-600 text-white py-2 px-4 rounded-lg shadow hover:bg-green-700 transition"><ExcelIcon /> CSV</button>
-                    <button onClick={() => handleExport('pdf')} className="w-full sm:w-auto flex items-center justify-center bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 transition"><PdfIcon /> PDF</button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function SignedAccountsReportGenerator({ closings, beneficiaries, companyName, onShowMessage, exportToPdf, scriptsReady }) {
-    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-    const today = new Date().toISOString().slice(0, 10);
-    const [startDate, setStartDate] = useState(firstDayOfMonth);
-    const [endDate, setEndDate] = useState(today);
-
-    const reportData = useMemo(() => {
-        const data = new Map();
-        beneficiaries.forEach(b => data.set(b.id, { name: b.name, startBalance: 0, newDebts: 0, payments: 0, endBalance: 0 }));
-
-        const allClosingsSorted = [...closings].sort((a, b) => a.date.localeCompare(b.date));
-
-        allClosingsSorted.forEach(c => {
-            const isBeforePeriod = c.date < startDate;
-            const isInPeriod = c.date >= startDate && c.date <= endDate;
-
-            (c.contasAssinadas || []).forEach(debt => {
-                if (data.has(debt.beneficiarioId)) {
-                    if (isBeforePeriod) data.get(debt.beneficiarioId).startBalance += debt.valor;
-                    if (isInPeriod) data.get(debt.beneficiarioId).newDebts += debt.valor;
-                }
-            });
-            (c.recebimentosContasAssinadas || []).forEach(receipt => {
-                if (data.has(receipt.beneficiarioId)) {
-                    if (isBeforePeriod) data.get(receipt.beneficiarioId).startBalance -= receipt.valorRecebido;
-                    if (isInPeriod) data.get(receipt.beneficiarioId).payments += receipt.valorRecebido;
-                }
-            });
-        });
-
-        let totalStart = 0, totalDebts = 0, totalPayments = 0, totalEnd = 0;
-        const result = [];
-        data.forEach((value, key) => {
-            value.endBalance = value.startBalance + value.newDebts - value.payments;
-            if (value.startBalance !== 0 || value.newDebts !== 0 || value.payments !== 0 || value.endBalance !== 0) {
-                result.push(value);
-                totalStart += value.startBalance;
-                totalDebts += value.newDebts;
-                totalPayments += value.payments;
-                totalEnd += value.endBalance;
-            }
-        });
-
-        return { data: result, totals: { totalStart, totalDebts, totalPayments, totalEnd } };
-    }, [startDate, endDate, closings, beneficiaries]);
-
-    const handleExport = (format) => {
-        if (!scriptsReady.pdf || !scriptsReady.xlsx) {
-            onShowMessage("Aguarde", "As bibliotecas de exportação ainda estão carregando.");
-            return;
-        }
-        
-        const title = `Relatório de Contas Assinadas - ${companyName}`;
-        const fileName = `relatorio_contas_${companyName}_${startDate}_a_${endDate}`;
-        const head = [['Beneficiário', 'Saldo Inicial', 'Novas Dívidas', 'Pagamentos', 'Saldo Final']];
-        const body = reportData.data.map(d => [d.name, d.startBalance.toFixed(2), d.newDebts.toFixed(2), d.payments.toFixed(2), d.endBalance.toFixed(2)]);
-        const foot = [['Total', reportData.totals.totalStart.toFixed(2), reportData.totals.totalDebts.toFixed(2), reportData.totals.totalPayments.toFixed(2), reportData.totals.totalEnd.toFixed(2)]];
-
-        if (format === 'pdf') {
-            exportToPdf(title, head, body, foot, `${fileName}.pdf`);
-        } else {
-            const wsData = reportData.data.map(d => ({
-                'Beneficiário': d.name,
-                'Saldo Inicial': d.startBalance,
-                'Novas Dívidas': d.newDebts,
-                'Pagamentos': d.payments,
-                'Saldo Final': d.endBalance
-            }));
-            wsData.push({
-                'Beneficiário': 'Total',
-                'Saldo Inicial': reportData.totals.totalStart,
-                'Novas Dívidas': reportData.totals.totalDebts,
-                'Pagamentos': reportData.totals.totalPayments,
-                'Saldo Final': reportData.totals.totalEnd
-            });
-            const ws = window.XLSX.utils.json_to_sheet(wsData);
-            const wb = window.XLSX.utils.book_new();
-            window.XLSX.utils.book_append_sheet(wb, ws, "Contas Assinadas");
-            window.XLSX.utils.writeFile(wb, `${fileName}.xlsx`);
-        }
-    };
-
-    return (
-        <div className="space-y-4">
-            <div className="bg-white p-4 rounded-lg shadow-md flex flex-col sm:flex-row flex-wrap gap-4 items-center">
-                <div className="flex-grow"><label htmlFor="startDateSigned" className="text-sm font-medium text-gray-700">De:</label><input id="startDateSigned" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="p-2 border rounded-md w-full" /></div>
-                <div className="flex-grow"><label htmlFor="endDateSigned" className="text-sm font-medium text-gray-700">Até:</label><input id="endDateSigned" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="p-2 border rounded-md w-full" /></div>
-                <div className="w-full sm:w-auto pt-5 flex gap-2">
-                    <button onClick={() => handleExport('csv')} className="w-full sm:w-auto flex items-center justify-center bg-green-600 text-white py-2 px-4 rounded-lg shadow hover:bg-green-700 transition"><ExcelIcon /> CSV</button>
-                    <button onClick={() => handleExport('pdf')} className="w-full sm:w-auto flex items-center justify-center bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 transition"><PdfIcon /> PDF</button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 function DailyCashFlowReport({ closings, companyName, onShowMessage, scriptsReady }) {
     const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
     const today = new Date().toISOString().slice(0, 10);
@@ -946,21 +716,20 @@ function DailyCashFlowReport({ closings, companyName, onShowMessage, scriptsRead
     }, [startDate, endDate, closings]);
 
     const handleExportCsv = () => {
-        if (!scriptsReady.xlsx) {
-            onShowMessage("Aguarde", "A biblioteca de exportação ainda está carregando.");
-            return;
-        }
         if (!reportData) return;
-        
-        const wsData = reportData.map(row => ({
-            'Data': row.date,
-            'Descrição': row.description,
-            'Valor': row.value
-        }));
-        const ws = window.XLSX.utils.json_to_sheet(wsData);
-        const wb = window.XLSX.utils.book_new();
-        window.XLSX.utils.book_append_sheet(wb, ws, "Movimentacao Caixa");
-        window.XLSX.utils.writeFile(wb, `movimentacao_caixa_${companyName}_${startDate}_a_${endDate}.xlsx`);
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "data,descrição,valor\n";
+        reportData.forEach(row => {
+            const description = `"${row.description.replace(/"/g, '""')}"`; // Handle quotes in description
+            csvContent += `${row.date},${description},${row.value.toFixed(2)}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `movimentacao_caixa_${companyName}_${startDate}_a_${endDate}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     return (
@@ -1147,6 +916,7 @@ export default function App() {
     if (!authenticatedCompany) return;
     setLoadingClosings(true);
     
+    // Otimização: Carregar todos os dados, mas o histórico filtra
     const closingsCollectionPath = `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`;
     const qClosings = query(collection(db, closingsCollectionPath));
     
@@ -1164,7 +934,7 @@ export default function App() {
     }, (error) => { console.error("Erro ao buscar beneficiários:", error); });
 
     return () => { unsubClosings(); unsubBeneficiaries(); };
-  }, [authenticatedCompany, appId]);
+  }, [authenticatedCompany]);
 
 
   const handleLoginSuccess = (company) => { setAuthenticatedCompany(company); };
