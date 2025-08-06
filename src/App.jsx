@@ -168,6 +168,7 @@ function LoginScreen({ companies, onLoginSuccess }) {
                 <form onSubmit={handleLogin} className="space-y-4">
                     <input
                         type="password"
+                        autoComplete="new-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Digite a senha"
