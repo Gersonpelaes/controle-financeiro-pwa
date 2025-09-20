@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, deleteDoc, getDocs, writeBatch, runTransaction, serverTimestamp, where } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, deleteDoc, writeBatch, runTransaction, serverTimestamp, where, updateDoc } from 'firebase/firestore';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 
 // --- Ícones em SVG para a UI ---
@@ -14,6 +14,7 @@ const HomeIcon = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" f
 const PlusCircleIcon = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
 const ChartBarIcon = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>;
 const UserPlusIcon = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" /></svg>;
+const CogIcon = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-1.007 1.11-1.227a1.99 1.99 0 012.086.064c.54.43.834 1.1.745 1.724l-.088.546a1.99 1.99 0 001.07 2.053l.545.272a1.99 1.99 0 011.228 1.11c.22.61.126 1.306-.24 1.845l-.48.64a1.99 1.99 0 00-.064 2.086c.43.54.724 1.215.634 1.845a1.99 1.99 0 01-1.11 1.228l-.546.272a1.99 1.99 0 00-2.053 1.07l-.272.545c-.61.22-1.306.125-1.845-.24a1.99 1.99 0 00-2.086-.064l-.546.48c-.54.43-1.215.724-1.845.634a1.99 1.99 0 01-1.228-1.11l-.272-.545a1.99 1.99 0 00-1.07-2.053l-.545-.272a1.99 1.99 0 01-1.11-1.228c-.22-.61-.125-1.306.24-1.845l.48-.64a1.99 1.99 0 00.064-2.086c-.43-.54-.724-1.215-.634-1.845a1.99 1.99 0 011.11-1.228l.546-.272a1.99 1.99 0 002.053-1.07l.272-.545zM12 15a3 3 0 100-6 3 3 0 000 6z" /></svg>;
 
 
 // --- Configuração do Firebase ---
@@ -26,7 +27,8 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 // --- Constantes ---
 const supplierCategories = ['Materia Prima', 'Folha de pagamento', 'Gasto operacional', 'Gasto de produção', 'Impostos', 'Despesas finaceiras'];
 const allPaymentMethods = ['dinheiro', 'credito', 'debito', 'pix', 'vr', 'ifoodAiqfome', 'contaAssinada'];
-const paymentMethodLabels = { dinheiro: 'Dinheiro', credito: 'Crédito', debito: 'Débito', pix: 'Pix', vr: 'Vale Refeição', ifoodAiqfome: 'iFood/Aiqfome', contaAssinada: 'Conta Assinada' };
+const expensePaymentMethods = ['dinheiro', 'cartao', 'pix'];
+const paymentMethodLabels = { dinheiro: 'Dinheiro', credito: 'Crédito', debito: 'Débito', pix: 'Pix', vr: 'Vale Refeição', ifoodAiqfome: 'iFood/Aiqfome', contaAssinada: 'Conta Assinada', cartao: 'Cartão' };
 
 // --- Dados Iniciais das Empresas ---
 const initialCompanies = [
@@ -64,11 +66,11 @@ const initialClosingData = {
         ifoodAiqfome: { salao: 0, balcao: 0, delivery: 0 }, 
         contaAssinada: { salao: 0, balcao: 0, delivery: 0 } 
     },
-    pagamentosCaixa: [{ referente: '', valor: 0, categoria: supplierCategories[0] }],
+    pagamentosCaixa: [{ referente: '', valor: 0, categoria: supplierCategories[0], formaPagamento: 'dinheiro' }],
     contasAssinadas: [{ beneficiarioId: '', observacao: '', valor: 0 }],
     recebimentosContasAssinadas: [{ beneficiarioId: '', valorRecebido: 0, formaPagamento: 'dinheiro' }],
     deliveryRates: { brotas: 0, torrinha: 0, retorno: 0, outras: 0 },
-    entregadores: [{ nome: '', diaria: 0, brotas: 0, torrinha: 0, retorno: 0, outras: 0 }],
+    entregadores: [{ nome: '', diaria: 0, brotas: 0, torrinha: 0, retorno: 0, outras: 0, formaPagamento: 'dinheiro' }],
     sangria: [{ responsavel: '', valor: 0 }],
     suprimento: [{ responsavel: '', valor: 0 }],
 };
@@ -166,6 +168,12 @@ function LoginScreen({ companies, onLoginSuccess }) {
                 <h1 className="text-4xl font-bold text-white drop-shadow-lg mb-2">Controle Financeiro</h1>
                 <p className="text-gray-300 mb-8 drop-shadow-md">Acesse o painel do seu restaurante.</p>
                 <form onSubmit={handleLogin} className="space-y-4">
+                     <input
+                        type="text"
+                        name="username"
+                        autoComplete="username"
+                        className="hidden"
+                    />
                     <input
                         type="password"
                         autoComplete="current-password"
@@ -230,13 +238,14 @@ function HistoryScreen({ closings, onEdit, onDelete, onAddNew }) {
     const formatCurrencyDisplay = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     const filteredClosings = useMemo(() => {
+        if (searchDate) {
+            return closings.filter(c => c.date === searchDate);
+        }
+        
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().slice(0, 10);
 
-        if (searchDate) {
-            return closings.filter(c => c.date === searchDate);
-        }
         return closings
             .filter(c => c.date >= thirtyDaysAgoStr)
             .sort((a, b) => b.date.localeCompare(a.date));
@@ -252,7 +261,7 @@ function HistoryScreen({ closings, onEdit, onDelete, onAddNew }) {
                     <input id="searchDate" type="date" value={searchDate} onChange={e => setSearchDate(e.target.value)} className="p-2 border rounded-md w-full mt-1" />
                 </div>
                 <button onClick={() => setSearchDate('')} className="w-full sm:w-auto bg-gray-500 text-white py-2 px-4 rounded-lg shadow hover:bg-gray-600 transition mt-2 sm:mt-6">
-                    Limpar Filtro
+                    Mostrar Últimos 30 Dias
                 </button>
             </div>
 
@@ -371,55 +380,77 @@ const DeliverersCostsTable = ({ data, rates, onChange, onAdd, onRemove }) => {
     const grandTotal = useMemo(() => (data || []).reduce((total, d) => total + (d.diaria || 0) + costColumns.reduce((subtotal, col) => subtotal + ((d[col] || 0) * (rates[col] || 0)), 0), 0), [data, rates]);
 
     return (
-        <div className="bg-white rounded-lg p-4 shadow-md"><h3 className="text-xl font-bold mb-4">Entregadores</h3><div className="overflow-x-auto"><table className="w-full text-center">
-            <thead className="bg-gray-50"><tr className="border-b">
-                <th className="p-2 text-left font-semibold">Nome</th>
-                <th className="p-2 font-semibold">Diária</th>
-                <th className="p-2 font-semibold">Qtd. Brotas</th>
-                <th className="p-2 font-semibold">Qtd. Torrinha</th>
-                <th className="p-2 font-semibold">Qtd. Retorno</th>
-                <th className="p-2 font-semibold">Qtd. Outras</th>
-                <th className="p-2 text-right font-semibold">Total</th>
-                <th className="p-2"></th>
-            </tr></thead>
-            <tbody>
-                {(data || []).map((deliverer, index) => {
-                    const rowTotal = (deliverer.diaria || 0) + costColumns.reduce((sum, col) => sum + ((deliverer[col] || 0) * (rates[col] || 0)), 0);
-                    return (
-                        <tr key={index} className="border-b">
-                            <td className="p-1"><input type="text" placeholder="Nome" value={deliverer.nome} onChange={(e) => onChange(e.target.value, 'entregadores', index, 'nome')} className="p-2 border rounded-md w-full"/></td>
-                            <td className="p-1"><CalculatorInput value={deliverer.diaria || 0} onChange={val => onChange(val, 'entregadores', index, 'diaria')} /></td>
-                            {costColumns.map(col => (
-                                <td key={col} className="p-1"><input type="number" value={deliverer[col] || 0} onChange={e => onChange(parseFloat(e.target.value) || 0, 'entregadores', index, col)} className="p-2 border rounded-md w-full text-center" /></td>
-                            ))}
-                            <td className="p-2 text-right font-bold font-accounting">{formatCurrencyDisplay(rowTotal)}</td>
-                            <td className="p-1"><button type="button" onClick={() => onRemove('entregadores', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></td>
+        <div className="bg-white rounded-lg p-4 shadow-md">
+            <h3 className="text-xl font-bold mb-4">Entregadores</h3>
+            <div className="overflow-x-auto">
+                <table className="w-full text-center">
+                    <thead className="bg-gray-50">
+                        <tr className="border-b">
+                            <th className="p-2 text-left font-semibold">Nome</th>
+                            <th className="p-2 font-semibold">Diária</th>
+                            <th className="p-2 font-semibold">Qtd. Brotas</th>
+                            <th className="p-2 font-semibold">Qtd. Torrinha</th>
+                            <th className="p-2 font-semibold">Qtd. Retorno</th>
+                            <th className="p-2 font-semibold">Qtd. Outras</th>
+                            <th className="p-2 font-semibold">Forma Pag.</th>
+                            <th className="p-2 text-right font-semibold">Total</th>
+                            <th className="p-2"></th>
                         </tr>
-                    );
-                })}
-            </tbody>
-            <tfoot><tr className="bg-gray-100">
-                <td colSpan="6" className="p-2 text-left font-bold">Total Geral</td>
-                <td className="p-2 text-right font-extrabold text-lg text-red-600 font-accounting">{formatCurrencyDisplay(grandTotal)}</td>
-                <td></td>
-            </tr></tfoot>
-        </table></div><button type="button" onClick={() => onAdd('entregadores')} className="text-blue-600 hover:text-blue-800 text-sm mt-4 font-medium">Adicionar Entregador</button></div>
+                    </thead>
+                    <tbody>
+                        {(data || []).map((deliverer, index) => {
+                            const rowTotal = (deliverer.diaria || 0) + costColumns.reduce((sum, col) => sum + ((deliverer[col] || 0) * (rates[col] || 0)), 0);
+                            return (
+                                <tr key={index} className="border-b">
+                                    <td className="p-1"><input type="text" placeholder="Nome" value={deliverer.nome} onChange={(e) => onChange(e.target.value, 'entregadores', index, 'nome')} className="p-2 border rounded-md w-full"/></td>
+                                    <td className="p-1"><CalculatorInput value={deliverer.diaria || 0} onChange={val => onChange(val, 'entregadores', index, 'diaria')} /></td>
+                                    {costColumns.map(col => (
+                                        <td key={col} className="p-1"><input type="number" value={deliverer[col] || 0} onChange={e => onChange(parseFloat(e.target.value) || 0, 'entregadores', index, col)} className="p-2 border rounded-md w-full text-center" /></td>
+                                    ))}
+                                    <td className="p-1">
+                                        <select value={deliverer.formaPagamento || 'dinheiro'} onChange={(e) => onChange(e.target.value, 'entregadores', index, 'formaPagamento')} className="p-2 border rounded-md w-full">
+                                            {expensePaymentMethods.map(m => <option key={m} value={m} className="capitalize">{paymentMethodLabels[m]}</option>)}
+                                        </select>
+                                    </td>
+                                    <td className="p-2 text-right font-bold font-accounting">{formatCurrencyDisplay(rowTotal)}</td>
+                                    <td className="p-1"><button type="button" onClick={() => onRemove('entregadores', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                    <tfoot>
+                        <tr className="bg-gray-100">
+                            <td colSpan="7" className="p-2 text-left font-bold">Total Geral</td>
+                            <td className="p-2 text-right font-extrabold text-lg text-red-600 font-accounting">{formatCurrencyDisplay(grandTotal)}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <button type="button" onClick={() => onAdd('entregadores')} className="text-blue-600 hover:text-blue-800 text-sm mt-4 font-medium">Adicionar Entregador</button>
+        </div>
     );
 };
 
 // --- Componente: Tabela de Contas Assinadas ---
-const SignedAccountsTable = ({ data, beneficiaries, onChange, onAdd, onRemove, onAddBeneficiary }) => {
+const SignedAccountsTable = ({ data, beneficiaries, onChange, onAdd, onRemove, onAddBeneficiary, onManageBeneficiaries }) => {
     const formatCurrencyDisplay = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const grandTotal = useMemo(() => (data || []).reduce((total, item) => total + (item.valor || 0), 0), [data]);
 
     return (
         <div className="bg-white rounded-lg p-4 shadow-md">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-4 gap-2 flex-wrap">
                 <h3 className="text-xl font-bold">Contas Assinadas (Vendas a Prazo)</h3>
-                <button type="button" onClick={onAddBeneficiary} className="flex items-center text-sm bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600">
-                    <UserPlusIcon className="h-5 w-5 mr-1" />
-                    Cadastrar Beneficiário
-                </button>
+                <div className="flex gap-2">
+                     <button type="button" onClick={onManageBeneficiaries} className="flex items-center text-sm bg-gray-500 text-white py-1 px-3 rounded-lg hover:bg-gray-600">
+                        <CogIcon className="h-5 w-5 mr-1" />
+                        Gerir
+                    </button>
+                    <button type="button" onClick={onAddBeneficiary} className="flex items-center text-sm bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600">
+                        <UserPlusIcon className="h-5 w-5 mr-1" />
+                        Cadastrar
+                    </button>
+                </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -467,7 +498,7 @@ const SignedAccountsTable = ({ data, beneficiaries, onChange, onAdd, onRemove, o
 };
 
 
-function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiaries, closings, onAddBeneficiary, showModal }) {
+function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiaries, closings, onAddBeneficiary, onManageBeneficiaries, showModal }) {
     const defaultDate = initialDate || new Date().toISOString().slice(0, 10);
     const [formData, setFormData] = useState({...initialClosingData, date: defaultDate });
     const [isEditing, setIsEditing] = useState(false);
@@ -561,8 +592,8 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
     
     const addListItem = (section) => {
         const newItem = {
-            pagamentosCaixa: { referente: '', valor: 0, categoria: supplierCategories[0] },
-            entregadores: { nome: '', diaria: 0, brotas: 0, torrinha: 0, retorno: 0, outras: 0 },
+            pagamentosCaixa: { referente: '', valor: 0, categoria: supplierCategories[0], formaPagamento: 'dinheiro' },
+            entregadores: { nome: '', diaria: 0, brotas: 0, torrinha: 0, retorno: 0, outras: 0, formaPagamento: 'dinheiro' },
             sangria: { responsavel: '', valor: 0 },
             suprimento: { responsavel: '', valor: 0 },
             contasAssinadas: { beneficiarioId: '', observacao: '', valor: 0 },
@@ -586,14 +617,12 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         const totals = {};
         allPaymentMethods.forEach(method => totals[method] = 0);
 
-        // Sum receipts from lunch and dinner
         for(const period of ['almoco', 'jantar']) {
             for(const method of allPaymentMethods) {
                 totals[method] += Object.values(formData[period][method] || {}).reduce((a, b) => a + b, 0);
             }
         }
         
-        // Add receipts from paying off old debts to their respective payment methods
         (formData.recebimentosContasAssinadas || []).forEach(receipt => {
             if (totals[receipt.formaPagamento] !== undefined) {
                 totals[receipt.formaPagamento] += receipt.valorRecebido;
@@ -601,13 +630,21 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         });
 
         const totalPagamentosCaixa = (formData.pagamentosCaixa || []).reduce((acc, f) => acc + f.valor, 0);
-        const totalEntregadores = (formData.entregadores || []).reduce((acc, e) => acc + e.diaria + (e.brotas * formData.deliveryRates.brotas) + (e.torrinha * formData.deliveryRates.torrinha) + (e.retorno * formData.deliveryRates.retorno) + (e.outras * formData.deliveryRates.outras), 0);
-        
+        const totalEntregadores = (formData.entregadores || []).reduce((acc, e) => {
+             const deliveryCosts = (e.brotas * formData.deliveryRates.brotas) + (e.torrinha * formData.deliveryRates.torrinha) + (e.retorno * formData.deliveryRates.retorno) + (e.outras * formData.deliveryRates.outras);
+             return acc + e.diaria + deliveryCosts;
+        }, 0);
         const totalDespesas = totalPagamentosCaixa + totalEntregadores;
         
+        const pagamentosCaixaEmDinheiro = (formData.pagamentosCaixa || []).filter(p => p.formaPagamento === 'dinheiro').reduce((acc, f) => acc + f.valor, 0);
+        const entregadoresEmDinheiro = (formData.entregadores || []).filter(e => e.formaPagamento === 'dinheiro').reduce((acc, e) => {
+             const deliveryCosts = (e.brotas * formData.deliveryRates.brotas) + (e.torrinha * formData.deliveryRates.torrinha) + (e.retorno * formData.deliveryRates.retorno) + (e.outras * formData.deliveryRates.outras);
+             return acc + e.diaria + deliveryCosts;
+        }, 0);
+        const totalDespesasEmDinheiro = pagamentosCaixaEmDinheiro + entregadoresEmDinheiro;
+
         const totalNovasContasAssinadas = (formData.contasAssinadas || []).reduce((acc, c) => acc + c.valor, 0);
         const totalBruto = allPaymentMethods.reduce((sum, method) => sum + totals[method], 0) + totalNovasContasAssinadas;
-        
         const resultadoLiquido = totalBruto - totalDespesas;
         
         const totalSangria = (formData.sangria || []).reduce((acc, s) => acc + s.valor, 0);
@@ -616,7 +653,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         const recebimentosDinheiro = (formData.recebimentosContasAssinadas || []).filter(r => r.formaPagamento === 'dinheiro').reduce((sum, r) => sum + r.valorRecebido, 0);
         const dinheiroVendas = Object.values(formData.almoco.dinheiro).reduce((a,b) => a+b, 0) + Object.values(formData.jantar.dinheiro).reduce((a,b) => a+b, 0);
 
-        const caixaFinal = formData.aberturaCaixa + dinheiroVendas + recebimentosDinheiro + totalSuprimento - totalSangria - totalDespesas;
+        const caixaFinal = formData.aberturaCaixa + dinheiroVendas + recebimentosDinheiro + totalSuprimento - totalSangria - totalDespesasEmDinheiro;
 
         return { ...totals, totalBruto, totalDespesas, resultadoLiquido, caixaFinal };
     }, [formData]);
@@ -650,11 +687,11 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
             </div></div>
 
             <div className="mt-4"><h3 className="text-xl font-bold mb-2 text-white drop-shadow-md">Custos e Despesas</h3><div className="space-y-4">
-                <div className="bg-white p-4 rounded-lg shadow-md"><h4 className="text-lg font-bold mb-4">Pagamentos Diretos do Caixa</h4>{(formData.pagamentosCaixa || []).map((item, index) => (<div key={index} className="grid grid-cols-1 gap-2 mb-2"><select value={item.categoria} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'categoria')} className="p-2 border rounded-md w-full"><option disabled>Selecione a Categoria</option>{supplierCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select><input type="text" placeholder="Descrição do Pagamento" value={item.referente} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'referente')} className="p-2 border rounded-md w-full"/><div className="flex items-center gap-2"><CalculatorInput value={item.valor} onChange={val => handleListChange(val, 'pagamentosCaixa', index, 'valor')} className="flex-grow" /><button type="button" onClick={() => removeListItem('pagamentosCaixa', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></div></div>))}<button type="button" onClick={() => addListItem('pagamentosCaixa')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Pagamento</button></div>
+                <div className="bg-white p-4 rounded-lg shadow-md"><h4 className="text-lg font-bold mb-4">Pagamentos Diretos do Caixa</h4>{(formData.pagamentosCaixa || []).map((item, index) => (<div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2"><select value={item.categoria} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'categoria')} className="p-2 border rounded-md w-full"><option disabled>Selecione a Categoria</option>{supplierCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select><input type="text" placeholder="Descrição do Pagamento" value={item.referente} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'referente')} className="p-2 border rounded-md w-full"/><div className="flex items-center gap-2"><CalculatorInput value={item.valor} onChange={val => handleListChange(val, 'pagamentosCaixa', index, 'valor')} className="flex-grow" /></div> <div className="flex items-center gap-2"> <select value={item.formaPagamento || 'dinheiro'} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'formaPagamento')} className="p-2 border rounded-md w-full">{expensePaymentMethods.map(m => <option key={m} value={m} className="capitalize">{paymentMethodLabels[m]}</option>)}</select> <button type="button" onClick={() => removeListItem('pagamentosCaixa', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></div></div>))}<button type="button" onClick={() => addListItem('pagamentosCaixa')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Pagamento</button></div>
                 <div><div className="bg-white p-4 rounded-lg shadow-md mb-4"><h4 className="text-lg font-bold mb-4">Valores por Entrega</h4><div className="grid grid-cols-2 gap-4">
                     {Object.keys(formData.deliveryRates).map(rateKey => (<div key={rateKey}><label className="block text-sm font-medium text-gray-600 capitalize">Valor {rateKey}</label><CalculatorInput value={formData.deliveryRates[rateKey]} onChange={val => setFormData({...formData, deliveryRates: {...formData.deliveryRates, [rateKey]: val}})} /></div>))}
                 </div></div><DeliverersCostsTable data={formData.entregadores || []} rates={formData.deliveryRates} onChange={handleListChange} onAdd={addListItem} onRemove={removeListItem} /></div>
-                <SignedAccountsTable data={formData.contasAssinadas || []} beneficiaries={beneficiaries} onChange={handleListChange} onAdd={addListItem} onRemove={removeListItem} onAddBeneficiary={onAddBeneficiary} />
+                <SignedAccountsTable data={formData.contasAssinadas || []} beneficiaries={beneficiaries} onChange={handleListChange} onAdd={addListItem} onRemove={removeListItem} onAddBeneficiary={onAddBeneficiary} onManageBeneficiaries={onManageBeneficiaries} />
             </div></div>
             <div className="mt-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg"><h3 className="text-xl font-bold mb-4">Resumo do Dia</h3>
                 <div className="grid grid-cols-2 gap-2 text-center">
@@ -942,19 +979,21 @@ function ExpensesReportGenerator({ closings, beneficiaries, companyName, onShowM
     const reportData = useMemo(() => {
         if (!selectedMonth) return null;
         const filtered = closings.filter(c => c.date.startsWith(selectedMonth));
-        const totalSuppliers = filtered.reduce((sum, c) => sum + (c.fornecedores || []).reduce((s, f) => s + f.valor, 0), 0);
-        const totalDeliverers = filtered.reduce((sum, c) => sum + (c.entregadores || []).reduce((s, d) => s + d.diaria + (d.brotas * c.deliveryRates.brotas) + (d.torrinha * c.deliveryRates.torrinha) + (d.retorno * c.deliveryRates.retorno) + (d.outras * c.deliveryRates.outras), 0), 0);
-        const totalSignedAccounts = filtered.reduce((sum, c) => sum + (c.contasAssinadas || []).reduce((s, sa) => s + sa.valor, 0), 0);
-        const grandTotalExpenses = totalSuppliers + totalDeliverers;
-        return { totalSuppliers, totalDeliverers, totalSignedAccounts, grandTotalExpenses };
+        const totalPagamentosCaixa = filtered.reduce((sum, c) => sum + (c.pagamentosCaixa || []).reduce((s, f) => s + f.valor, 0), 0);
+        const totalEntregadores = filtered.reduce((sum, c) => sum + (c.entregadores || []).reduce((s, d) => {
+            const deliveryCosts = (d.brotas * c.deliveryRates.brotas) + (d.torrinha * c.deliveryRates.torrinha) + (d.retorno * c.deliveryRates.retorno) + (d.outras * c.deliveryRates.outras);
+            return s + d.diaria + deliveryCosts;
+        }, 0), 0);
+        const grandTotalExpenses = totalPagamentosCaixa + totalEntregadores;
+        return { totalPagamentosCaixa, totalEntregadores, grandTotalExpenses };
     }, [selectedMonth, closings]);
 
     const handleExportPdf = () => {
         if (!scriptsReady.pdf) { onShowMessage("Aguarde", "A biblioteca de exportação PDF ainda não foi carregada."); return; }
         const headers = [['Categoria de Despesa', 'Valor Total']];
         const body = [
-            ['Fornecedores', formatCurrencyDisplay(reportData.totalSuppliers)],
-            ['Entregadores', formatCurrencyDisplay(reportData.totalDeliverers)],
+            ['Pagamentos Diretos do Caixa', formatCurrencyDisplay(reportData.totalPagamentosCaixa)],
+            ['Entregadores', formatCurrencyDisplay(reportData.totalEntregadores)],
         ];
         const footer = [['TOTAL GERAL', formatCurrencyDisplay(reportData.grandTotalExpenses)]];
         exportToPdf(`Relatório de Despesas - ${selectedMonth}`, headers, body, footer, `relatorio_despesas_${companyName}_${selectedMonth}.pdf`);
@@ -969,8 +1008,8 @@ function ExpensesReportGenerator({ closings, beneficiaries, companyName, onShowM
                 <button onClick={handleExportPdf} disabled={!scriptsReady.pdf} className="w-full sm:w-auto flex items-center justify-center bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 transition disabled:bg-red-300 disabled:cursor-not-allowed"><PdfIcon /> Exportar PDF</button>
             </div>
             {reportData && <div className="bg-white p-4 rounded-lg shadow-md"><h2 className="text-lg font-bold mb-2">Resumo de Despesas do Mês</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-                <div className="p-3 bg-gray-100 rounded-lg"><h4 className="text-sm font-semibold text-gray-600">Fornecedores</h4><p className="text-xl font-bold font-accounting text-red-600">{formatCurrencyDisplay(reportData.totalSuppliers)}</p></div>
-                <div className="p-3 bg-gray-100 rounded-lg"><h4 className="text-sm font-semibold text-gray-600">Entregadores</h4><p className="text-xl font-bold font-accounting text-red-600">{formatCurrencyDisplay(reportData.totalDeliverers)}</p></div>
+                <div className="p-3 bg-gray-100 rounded-lg"><h4 className="text-sm font-semibold text-gray-600">Pagamentos Diretos</h4><p className="text-xl font-bold font-accounting text-red-600">{formatCurrencyDisplay(reportData.totalPagamentosCaixa)}</p></div>
+                <div className="p-3 bg-gray-100 rounded-lg"><h4 className="text-sm font-semibold text-gray-600">Entregadores</h4><p className="text-xl font-bold font-accounting text-red-600">{formatCurrencyDisplay(reportData.totalEntregadores)}</p></div>
                 <div className="p-3 bg-red-500 rounded-lg text-white"><h4 className="text-sm font-semibold">TOTAL DESPESAS</h4><p className="text-xl font-bold font-accounting">{formatCurrencyDisplay(reportData.grandTotalExpenses)}</p></div>
             </div></div>}
         </div>
@@ -1144,6 +1183,61 @@ const BeneficiaryModal = ({ isOpen, onSave, onCancel, showMessage }) => {
     );
 };
 
+// --- Componente para GERIR Beneficiários ---
+const ManageBeneficiariesModal = ({ isOpen, onCancel, beneficiaries, onUpdate, onDelete, showMessage }) => {
+    const [editingId, setEditingId] = useState(null);
+    const [editingName, setEditingName] = useState('');
+
+    const handleEdit = (beneficiary) => {
+        setEditingId(beneficiary.id);
+        setEditingName(beneficiary.name);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setEditingName('');
+    };
+
+    const handleSave = () => {
+        if (!editingName.trim()) {
+            showMessage("Erro", "O nome não pode ficar em branco.");
+            return;
+        }
+        onUpdate(editingId, editingName);
+        handleCancelEdit();
+    };
+
+    return (
+        <Modal isOpen={isOpen} title="Gerir Beneficiários" onCancel={onCancel}>
+             <div className="text-left max-h-96 overflow-y-auto">
+                {beneficiaries.map(b => (
+                    <div key={b.id} className="flex items-center justify-between p-2 border-b">
+                        {editingId === b.id ? (
+                            <input type="text" value={editingName} onChange={e => setEditingName(e.target.value)} className="p-1 border rounded-md flex-grow" />
+                        ) : (
+                            <span className="flex-grow">{b.name}</span>
+                        )}
+                        <div className="flex gap-2 ml-4">
+                             {editingId === b.id ? (
+                                <>
+                                    <button onClick={handleSave} className="text-green-600 hover:text-green-800">Salvar</button>
+                                    <button onClick={handleCancelEdit} className="text-gray-500 hover:text-gray-700">Cancelar</button>
+                                </>
+                             ) : (
+                                <>
+                                    <button onClick={() => handleEdit(b)} className="text-blue-600 hover:text-blue-800 p-1"><EditIcon /></button>
+                                    <button onClick={() => onDelete(b.id, b.name)} className="text-red-500 hover:text-red-700 p-1"><TrashIcon /></button>
+                                </>
+                             )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </Modal>
+    );
+};
+
+
 const Header = ({ companyName, onLogout }) => {
     return (
         <header className="p-4 bg-black/30 backdrop-blur-lg sticky top-0 z-20 flex justify-between items-center">
@@ -1168,6 +1262,7 @@ export default function App() {
   const [loadingClosings, setLoadingClosings] = useState(true);
   const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', onConfirm: null, children: null });
   const [isBeneficiaryModalOpen, setIsBeneficiaryModalOpen] = useState(false);
+  const [isManageBeneficiariesModalOpen, setIsManageBeneficiariesModalOpen] = useState(false);
   const [beneficiaries, setBeneficiaries] = useState([]);
   const [scriptsReady, setScriptsReady] = useState({ pdf: false, xlsx: false });
 
@@ -1260,10 +1355,8 @@ export default function App() {
     if (!authenticatedCompany) return;
     setLoadingClosings(true);
     
-    // Otimização: Carregar todos os dados, mas o histórico filtra
     const closingsCollectionPath = `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`;
     const qClosings = query(collection(db, closingsCollectionPath));
-    
     const unsubClosings = onSnapshot(qClosings, (snapshot) => {
       const closingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setClosings(closingsData);
@@ -1325,6 +1418,33 @@ export default function App() {
     } catch (error) { console.error("Erro ao salvar beneficiário:", error); showModal("Erro", "Não foi possível salvar o beneficiário."); }
   };
 
+  const handleUpdateBeneficiary = async (id, newName) => {
+    try {
+        const docRef = doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/beneficiaries`, id);
+        await updateDoc(docRef, { name: newName });
+        showModal("Sucesso", "Nome do beneficiário atualizado.");
+    } catch (error) {
+        console.error("Erro ao atualizar beneficiário:", error);
+        showModal("Erro", "Não foi possível atualizar o nome.");
+    }
+  };
+
+  const handleDeleteBeneficiary = async (id, name) => {
+    showModal("Confirmar Exclusão", `Tem certeza que deseja excluir o beneficiário "${name}"? Esta ação não pode ser desfeita.`, 
+        async () => {
+             try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/beneficiaries`, id);
+                await deleteDoc(docRef);
+                showModal("Sucesso", "Beneficiário excluído.");
+            } catch (error) {
+                console.error("Erro ao excluir beneficiário:", error);
+                showModal("Erro", "Não foi possível excluir o beneficiário.");
+            }
+        }
+    );
+  };
+
+
   const handleEdit = (closing) => { setEditingDate(closing.date); setActiveView('add'); }
   const handleAddNew = () => { setEditingDate(null); setActiveView('add'); }
 
@@ -1335,7 +1455,7 @@ export default function App() {
       let currentView;
       switch (activeView) {
         case 'add':
-            currentView = <AddClosingScreen onSave={handleSave} onCancel={() => setActiveView('history')} companyId={authenticatedCompany.id} initialDate={editingDate} beneficiaries={beneficiaries} closings={closings} onAddBeneficiary={() => setIsBeneficiaryModalOpen(true)} showModal={showModal} />;
+            currentView = <AddClosingScreen onSave={handleSave} onCancel={() => setActiveView('history')} companyId={authenticatedCompany.id} initialDate={editingDate} beneficiaries={beneficiaries} closings={closings} onAddBeneficiary={() => setIsBeneficiaryModalOpen(true)} onManageBeneficiaries={() => setIsManageBeneficiariesModalOpen(true)} showModal={showModal} />;
             break;
         case 'reports':
             currentView = <ReportsScreen closings={closings} beneficiaries={beneficiaries} companyName={authenticatedCompany.name} onLogout={handleLogout} onShowMessage={showModal} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />;
@@ -1367,7 +1487,9 @@ export default function App() {
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap'); .font-accounting { font-family: 'Roboto Mono', monospace; }`}</style>
         <Modal isOpen={modalState.isOpen} title={modalState.title} message={modalState.message} onConfirm={modalState.onConfirm} onCancel={hideModal} />
         <BeneficiaryModal isOpen={isBeneficiaryModalOpen} onCancel={() => setIsBeneficiaryModalOpen(false)} onSave={handleSaveBeneficiary} showMessage={showModal} />
+        <ManageBeneficiariesModal isOpen={isManageBeneficiariesModalOpen} onCancel={() => setIsManageBeneficiariesModalOpen(false)} beneficiaries={beneficiaries} onUpdate={handleUpdateBeneficiary} onDelete={handleDeleteBeneficiary} showMessage={showModal} />
         {renderPage()}
     </div>
   );
 }
+
