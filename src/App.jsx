@@ -32,12 +32,12 @@ const paymentMethodLabels = { dinheiro: 'Dinheiro', credito: 'Crédito', debito:
 
 // --- Dados Iniciais das Empresas ---
 const initialCompanies = [
-  { id: 'remo_brotas', name: 'Remo Brotas', password: '7410' },
-  { id: 'jack_pepira', name: 'Jack Pepira', password: '8522' },
-  { id: 'o_forno', name: 'O Forno', password: '9633' },
-  { id: 'cafe_catharina', name: 'Café Catharina', password: '1010' },
-  { id: 'emporio_peixaria_brotas', name: 'Empório e Peixaria Brotas', password: '2020' },
-  { id: 'jackburguers', name: 'Jackburguers', password: '3030' },
+    { id: 'remo_brotas', name: 'Remo Brotas', password: '7410' },
+    { id: 'jack_pepira', name: 'Jack Pepira', password: '8522' },
+    { id: 'o_forno', name: 'O Forno', password: '9633' },
+    { id: 'cafe_catharina', name: 'Café Catharina', password: '1010' },
+    { id: 'emporio_peixaria_brotas', name: 'Empório e Peixaria Brotas', password: '2020' },
+    { id: 'jackburguers', name: 'Jackburguers', password: '3030' },
 ];
 const configDocPath = `artifacts/${appId}/public/data/app_config/companies`;
 
@@ -46,25 +46,25 @@ const configDocPath = `artifacts/${appId}/public/data/app_config/companies`;
 const initialClosingData = {
     date: new Date().toISOString().slice(0, 10),
     aberturaCaixa: 0,
-    almoco: { 
-        pax: { salao: 0, balcao: 0, delivery: 0 }, 
-        dinheiro: { salao: 0, balcao: 0, delivery: 0 }, 
-        credito: { salao: 0, balcao: 0, delivery: 0 }, 
-        debito: { salao: 0, balcao: 0, delivery: 0 }, 
-        pix: { salao: 0, balcao: 0, delivery: 0 }, 
-        vr: { salao: 0, balcao: 0, delivery: 0 }, 
-        ifoodAiqfome: { salao: 0, balcao: 0, delivery: 0 }, 
-        contaAssinada: { salao: 0, balcao: 0, delivery: 0 } 
+    almoco: {
+        pax: { salao: 0, balcao: 0, delivery: 0 },
+        dinheiro: { salao: 0, balcao: 0, delivery: 0 },
+        credito: { salao: 0, balcao: 0, delivery: 0 },
+        debito: { salao: 0, balcao: 0, delivery: 0 },
+        pix: { salao: 0, balcao: 0, delivery: 0 },
+        vr: { salao: 0, balcao: 0, delivery: 0 },
+        ifoodAiqfome: { salao: 0, balcao: 0, delivery: 0 },
+        contaAssinada: { salao: 0, balcao: 0, delivery: 0 }
     },
-    jantar: { 
-        pax: { salao: 0, balcao: 0, delivery: 0 }, 
-        dinheiro: { salao: 0, balcao: 0, delivery: 0 }, 
-        credito: { salao: 0, balcao: 0, delivery: 0 }, 
-        debito: { salao: 0, balcao: 0, delivery: 0 }, 
-        pix: { salao: 0, balcao: 0, delivery: 0 }, 
-        vr: { salao: 0, balcao: 0, delivery: 0 }, 
-        ifoodAiqfome: { salao: 0, balcao: 0, delivery: 0 }, 
-        contaAssinada: { salao: 0, balcao: 0, delivery: 0 } 
+    jantar: {
+        pax: { salao: 0, balcao: 0, delivery: 0 },
+        dinheiro: { salao: 0, balcao: 0, delivery: 0 },
+        credito: { salao: 0, balcao: 0, delivery: 0 },
+        debito: { salao: 0, balcao: 0, delivery: 0 },
+        pix: { salao: 0, balcao: 0, delivery: 0 },
+        vr: { salao: 0, balcao: 0, delivery: 0 },
+        ifoodAiqfome: { salao: 0, balcao: 0, delivery: 0 },
+        contaAssinada: { salao: 0, balcao: 0, delivery: 0 }
     },
     pagamentosCaixa: [{ referente: '', valor: 0, categoria: supplierCategories[0], formaPagamento: 'dinheiro' }],
     contasAssinadas: [{ beneficiarioId: '', observacao: '', valor: 0 }],
@@ -116,7 +116,7 @@ const CalculatorInput = ({ value, onChange, className }) => {
         const evaluatedValue = evaluateExpression(inputValue);
         onChange(evaluatedValue);
     };
-    
+
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
             handleBlur();
@@ -158,7 +158,7 @@ function LoginScreen({ companies, onLoginSuccess }) {
                 setError('Senha incorreta. Tente novamente.');
                 setIsLoggingIn(false);
             }
-        }, 500); 
+        }, 500);
     };
 
     return (
@@ -168,7 +168,7 @@ function LoginScreen({ companies, onLoginSuccess }) {
                 <h1 className="text-4xl font-bold text-white drop-shadow-lg mb-2">Controle Financeiro</h1>
                 <p className="text-gray-300 mb-8 drop-shadow-md">Acesse o painel do seu restaurante.</p>
                 <form onSubmit={handleLogin} className="space-y-4">
-                     <input
+                    <input
                         type="text"
                         name="username"
                         autoComplete="username"
@@ -218,7 +218,7 @@ const Modal = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Con
                 {children}
                 <div className="flex justify-center gap-4 mt-6">
                     {onConfirm && (
-                         <button onClick={onConfirm} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
+                        <button onClick={onConfirm} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
                             {confirmText}
                         </button>
                     )}
@@ -241,7 +241,7 @@ function HistoryScreen({ closings, onEdit, onDelete, onAddNew }) {
         if (searchDate) {
             return closings.filter(c => c.date === searchDate);
         }
-        
+
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().slice(0, 10);
@@ -254,7 +254,7 @@ function HistoryScreen({ closings, onEdit, onDelete, onAddNew }) {
     return (
         <div className="p-4">
             <h2 className="text-2xl font-bold text-white mb-4">Histórico de Fechamentos</h2>
-            
+
             <div className="bg-white/20 p-3 rounded-lg mb-4 flex flex-col sm:flex-row gap-4 items-center">
                 <div className="flex-grow">
                     <label htmlFor="searchDate" className="text-white text-sm font-medium">Pesquisar por data:</label>
@@ -289,14 +289,14 @@ function HistoryScreen({ closings, onEdit, onDelete, onAddNew }) {
                                 };
                                 const totalReceita = sumPeriod(c.almoco) + sumPeriod(c.jantar);
                                 return (
-                                <tr key={c.id} className="border-b hover:bg-gray-50">
-                                    <td className="p-2 font-semibold">{new Date(c.date + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                                    <td className="p-2 text-right text-green-600 font-accounting">{formatCurrencyDisplay(totalReceita)}</td>
-                                    <td className="p-2 text-center">
-                                        <button onClick={() => onEdit(c)} className="text-gray-500 hover:text-blue-600 p-1"><EditIcon/></button>
-                                        <button onClick={() => onDelete(c.id, c.date)} className="text-gray-500 hover:text-red-600 p-1"><TrashIcon/></button>
-                                    </td>
-                                </tr>
+                                    <tr key={c.id} className="border-b hover:bg-gray-50">
+                                        <td className="p-2 font-semibold">{new Date(c.date + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                                        <td className="p-2 text-right text-green-600 font-accounting">{formatCurrencyDisplay(totalReceita)}</td>
+                                        <td className="p-2 text-center">
+                                            <button onClick={() => onEdit(c)} className="text-gray-500 hover:text-blue-600 p-1"><EditIcon /></button>
+                                            <button onClick={() => onDelete(c.id, c.date)} className="text-gray-500 hover:text-red-600 p-1"><TrashIcon /></button>
+                                        </td>
+                                    </tr>
                                 )
                             })) : (<tr><td colSpan="3" className="text-center p-8 text-gray-500">Nenhum fechamento encontrado para o período.</td></tr>)}
                         </tbody>
@@ -402,7 +402,7 @@ const DeliverersCostsTable = ({ data, rates, onChange, onAdd, onRemove }) => {
                             const rowTotal = (deliverer.diaria || 0) + costColumns.reduce((sum, col) => sum + ((deliverer[col] || 0) * (rates[col] || 0)), 0);
                             return (
                                 <tr key={index} className="border-b">
-                                    <td className="p-1"><input type="text" placeholder="Nome" value={deliverer.nome} onChange={(e) => onChange(e.target.value, 'entregadores', index, 'nome')} className="p-2 border rounded-md w-full"/></td>
+                                    <td className="p-1"><input type="text" placeholder="Nome" value={deliverer.nome} onChange={(e) => onChange(e.target.value, 'entregadores', index, 'nome')} className="p-2 border rounded-md w-full" /></td>
                                     <td className="p-1"><CalculatorInput value={deliverer.diaria || 0} onChange={val => onChange(val, 'entregadores', index, 'diaria')} /></td>
                                     {costColumns.map(col => (
                                         <td key={col} className="p-1"><input type="number" value={deliverer[col] || 0} onChange={e => onChange(parseFloat(e.target.value) || 0, 'entregadores', index, col)} className="p-2 border rounded-md w-full text-center" /></td>
@@ -413,7 +413,7 @@ const DeliverersCostsTable = ({ data, rates, onChange, onAdd, onRemove }) => {
                                         </select>
                                     </td>
                                     <td className="p-2 text-right font-bold font-accounting">{formatCurrencyDisplay(rowTotal)}</td>
-                                    <td className="p-1"><button type="button" onClick={() => onRemove('entregadores', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></td>
+                                    <td className="p-1"><button type="button" onClick={() => onRemove('entregadores', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon /></button></td>
                                 </tr>
                             );
                         })}
@@ -442,7 +442,7 @@ const SignedAccountsTable = ({ data, beneficiaries, onChange, onAdd, onRemove, o
             <div className="flex justify-between items-center mb-4 gap-2 flex-wrap">
                 <h3 className="text-xl font-bold">Contas Assinadas (Vendas a Prazo)</h3>
                 <div className="flex gap-2">
-                     <button type="button" onClick={onManageBeneficiaries} className="flex items-center text-sm bg-gray-500 text-white py-1 px-3 rounded-lg hover:bg-gray-600">
+                    <button type="button" onClick={onManageBeneficiaries} className="flex items-center text-sm bg-gray-500 text-white py-1 px-3 rounded-lg hover:bg-gray-600">
                         <CogIcon className="h-5 w-5 mr-1" />
                         Gerir
                     </button>
@@ -483,11 +483,11 @@ const SignedAccountsTable = ({ data, beneficiaries, onChange, onAdd, onRemove, o
                             </tr>
                         ))}
                     </tbody>
-                     <tfoot>
+                    <tfoot>
                         <tr className="bg-gray-100">
-                           <td colSpan="2" className="p-2 text-left font-bold">Total</td>
-                           <td className="p-2 text-left font-extrabold text-lg text-green-600 font-accounting">{formatCurrencyDisplay(grandTotal)}</td>
-                           <td></td>
+                            <td colSpan="2" className="p-2 text-left font-bold">Total</td>
+                            <td className="p-2 text-left font-extrabold text-lg text-green-600 font-accounting">{formatCurrencyDisplay(grandTotal)}</td>
+                            <td></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -500,7 +500,7 @@ const SignedAccountsTable = ({ data, beneficiaries, onChange, onAdd, onRemove, o
 
 function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiaries, closings, onAddBeneficiary, onManageBeneficiaries, showModal }) {
     const defaultDate = initialDate || new Date().toISOString().slice(0, 10);
-    const [formData, setFormData] = useState({...initialClosingData, date: defaultDate });
+    const [formData, setFormData] = useState({ ...initialClosingData, date: defaultDate });
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -511,7 +511,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         beneficiaries.forEach(b => debts.set(b.id, 0));
 
         const closingsBeforeThisDate = closings.filter(c => c.date < formData.date)
-                                               .sort((a,b) => a.date.localeCompare(b.date));
+            .sort((a, b) => a.date.localeCompare(b.date));
 
         closingsBeforeThisDate.forEach(closing => {
             (closing.contasAssinadas || []).forEach(debt => {
@@ -520,7 +520,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
                 }
             });
             (closing.recebimentosContasAssinadas || []).forEach(receipt => {
-                 if (debts.has(receipt.beneficiarioId)) {
+                if (debts.has(receipt.beneficiarioId)) {
                     debts.set(receipt.beneficiarioId, (debts.get(receipt.beneficiarioId) || 0) - receipt.valorRecebido);
                 }
             });
@@ -554,7 +554,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
                     setFormData(completeData);
                     setIsEditing(true);
                 } else {
-                    setFormData(prev => ({...JSON.parse(JSON.stringify(initialClosingData)), date: prev.date }));
+                    setFormData(prev => ({ ...JSON.parse(JSON.stringify(initialClosingData)), date: prev.date }));
                     setIsEditing(false);
                 }
             } catch (error) {
@@ -565,7 +565,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         };
         fetchClosingData();
     }, [formData.date, companyId]);
-    
+
     const handleReceiptChange = (value, period, field, channel) => {
         setFormData(prev => {
             const newPeriodData = { ...prev[period] };
@@ -578,18 +578,18 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         });
     };
 
-    const handleListChange = (value, section, index, field) => { 
+    const handleListChange = (value, section, index, field) => {
         const newList = [...(formData[section] || [])];
-        newList[index] = {...newList[index], [field]: value};
+        newList[index] = { ...newList[index], [field]: value };
 
-        if(section === 'recebimentosContasAssinadas' && field === 'beneficiarioId'){
+        if (section === 'recebimentosContasAssinadas' && field === 'beneficiarioId') {
             const totalDebt = beneficiaryDebts.get(value) || 0;
             newList[index]['valorRecebido'] = totalDebt > 0 ? totalDebt : 0;
         }
 
-        setFormData({ ...formData, [section]: newList }); 
+        setFormData({ ...formData, [section]: newList });
     };
-    
+
     const addListItem = (section) => {
         const newItem = {
             pagamentosCaixa: { referente: '', valor: 0, categoria: supplierCategories[0], formaPagamento: 'dinheiro' },
@@ -603,7 +603,7 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
     };
 
     const removeListItem = (section, index) => { if (formData[section] && formData[section].length > 0) setFormData({ ...formData, [section]: formData[section].filter((_, i) => i !== index) }); };
-    
+
     const handleSubmit = (e) => {
         e.preventDefault();
         showModal(
@@ -612,17 +612,17 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
             () => onSave(formData)
         );
     };
-    
+
     const summaryTotals = useMemo(() => {
         const totals = {};
         allPaymentMethods.forEach(method => totals[method] = 0);
 
-        for(const period of ['almoco', 'jantar']) {
-            for(const method of allPaymentMethods) {
+        for (const period of ['almoco', 'jantar']) {
+            for (const method of allPaymentMethods) {
                 totals[method] += Object.values(formData[period][method] || {}).reduce((a, b) => a + b, 0);
             }
         }
-        
+
         (formData.recebimentosContasAssinadas || []).forEach(receipt => {
             if (totals[receipt.formaPagamento] !== undefined) {
                 totals[receipt.formaPagamento] += receipt.valorRecebido;
@@ -631,27 +631,27 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
 
         const totalPagamentosCaixa = (formData.pagamentosCaixa || []).reduce((acc, f) => acc + f.valor, 0);
         const totalEntregadores = (formData.entregadores || []).reduce((acc, e) => {
-             const deliveryCosts = (e.brotas * formData.deliveryRates.brotas) + (e.torrinha * formData.deliveryRates.torrinha) + (e.retorno * formData.deliveryRates.retorno) + (e.outras * formData.deliveryRates.outras);
-             return acc + e.diaria + deliveryCosts;
+            const deliveryCosts = (e.brotas * formData.deliveryRates.brotas) + (e.torrinha * formData.deliveryRates.torrinha) + (e.retorno * formData.deliveryRates.retorno) + (e.outras * formData.deliveryRates.outras);
+            return acc + e.diaria + deliveryCosts;
         }, 0);
         const totalDespesas = totalPagamentosCaixa + totalEntregadores;
-        
+
         const pagamentosCaixaEmDinheiro = (formData.pagamentosCaixa || []).filter(p => p.formaPagamento === 'dinheiro').reduce((acc, f) => acc + f.valor, 0);
         const entregadoresEmDinheiro = (formData.entregadores || []).filter(e => e.formaPagamento === 'dinheiro').reduce((acc, e) => {
-             const deliveryCosts = (e.brotas * formData.deliveryRates.brotas) + (e.torrinha * formData.deliveryRates.torrinha) + (e.retorno * formData.deliveryRates.retorno) + (e.outras * formData.deliveryRates.outras);
-             return acc + e.diaria + deliveryCosts;
+            const deliveryCosts = (e.brotas * formData.deliveryRates.brotas) + (e.torrinha * formData.deliveryRates.torrinha) + (e.retorno * formData.deliveryRates.retorno) + (e.outras * formData.deliveryRates.outras);
+            return acc + e.diaria + deliveryCosts;
         }, 0);
         const totalDespesasEmDinheiro = pagamentosCaixaEmDinheiro + entregadoresEmDinheiro;
 
         const totalNovasContasAssinadas = (formData.contasAssinadas || []).reduce((acc, c) => acc + c.valor, 0);
         const totalBruto = allPaymentMethods.reduce((sum, method) => sum + totals[method], 0) + totalNovasContasAssinadas;
         const resultadoLiquido = totalBruto - totalDespesas;
-        
+
         const totalSangria = (formData.sangria || []).reduce((acc, s) => acc + s.valor, 0);
         const totalSuprimento = (formData.suprimento || []).reduce((acc, s) => acc + s.valor, 0);
-        
+
         const recebimentosDinheiro = (formData.recebimentosContasAssinadas || []).filter(r => r.formaPagamento === 'dinheiro').reduce((sum, r) => sum + r.valorRecebido, 0);
-        const dinheiroVendas = Object.values(formData.almoco.dinheiro).reduce((a,b) => a+b, 0) + Object.values(formData.jantar.dinheiro).reduce((a,b) => a+b, 0);
+        const dinheiroVendas = Object.values(formData.almoco.dinheiro).reduce((a, b) => a + b, 0) + Object.values(formData.jantar.dinheiro).reduce((a, b) => a + b, 0);
 
         const caixaFinal = formData.aberturaCaixa + dinheiroVendas + recebimentosDinheiro + totalSuprimento - totalSangria - totalDespesasEmDinheiro;
 
@@ -662,54 +662,54 @@ function AddClosingScreen({ onSave, onCancel, companyId, initialDate, beneficiar
         <div className="p-4 pb-20">
             <h2 className="text-2xl font-bold text-white mb-4">{isEditing ? 'Editar Fechamento' : 'Novo Fechamento'}</h2>
             <div className="space-y-6"><form onSubmit={handleSubmit}>
-            <div className="bg-white p-4 rounded-lg shadow-md"><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-sm font-medium text-gray-600">Data do Fechamento</label><input type="date" value={formData.date} onChange={handleDateChange} className="p-2 border rounded-md w-full mt-1" required/></div><div><label className="block text-sm font-medium text-gray-600">Abertura de Caixa (R$)</label><CalculatorInput value={formData.aberturaCaixa} onChange={val => setFormData({...formData, aberturaCaixa: val})} /></div></div></div>
-            {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner/></div> : (
-            <>
-            <div className="mt-4"><h3 className="text-xl font-bold mb-2 text-white drop-shadow-md">Recebimentos</h3><div className="grid md:grid-cols-2 gap-4"><ReceiptsTable period="almoco" data={formData.almoco} onChange={handleReceiptChange} /><ReceiptsTable period="jantar" data={formData.jantar} onChange={handleReceiptChange} /></div></div>
-            
-            <div className="mt-4 bg-white p-4 rounded-lg shadow-md"><h3 className="text-xl font-bold mb-4">Movimentações de Caixa</h3><div className="space-y-4">
-                 <div>
-                    <h4 className="text-lg font-semibold mb-2 text-green-700">Recebimento de Contas Assinadas</h4>
-                    {(formData.recebimentosContasAssinadas || []).map((item, index) => (
-                        <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2 items-center">
-                            <div className="md:col-span-1"><label className="text-xs text-gray-500">Beneficiário</label><select value={item.beneficiarioId} onChange={(e) => handleListChange(e.target.value, 'recebimentosContasAssinadas', index, 'beneficiarioId')} className="p-2 border rounded-md w-full"><option value="">Selecione</option>{beneficiaries.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
-                            <div><label className="text-xs text-gray-500">Dívida Total</label><input type="text" readOnly value={formatCurrencyDisplay(beneficiaryDebts.get(item.beneficiarioId) || 0)} className="p-2 border rounded-md w-full bg-gray-100 text-center" /></div>
-                            <div><label className="text-xs text-gray-500">Valor Recebido</label><CalculatorInput value={item.valorRecebido || 0} onChange={val => handleListChange(val, 'recebimentosContasAssinadas', index, 'valorRecebido')} /></div>
-                            <div className="flex items-end gap-2"><div className="flex-grow"><label className="text-xs text-gray-500">Forma Pag.</label><select value={item.formaPagamento} onChange={(e) => handleListChange(e.target.value, 'recebimentosContasAssinadas', index, 'formaPagamento')} className="p-2 border rounded-md w-full">{allPaymentMethods.map(m => <option key={m} value={m} className="capitalize">{paymentMethodLabels[m]}</option>)}</select></div><button type="button" onClick={() => removeListItem('recebimentosContasAssinadas', index)} className="text-red-500 hover:text-red-700 p-2 mb-1"><TrashIcon/></button></div>
-                        </div>
-                    ))}
-                    <button type="button" onClick={() => addListItem('recebimentosContasAssinadas')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Recebimento</button>
-                </div>
-                <hr/>
-                <div><h4 className="text-lg font-semibold mb-2 text-red-600">Sangria (Saídas)</h4>{formData.sangria.map((item, index) => (<div key={index} className="flex gap-2 mb-2 items-center"><input type="text" placeholder="Responsável" value={item.responsavel} onChange={(e) => handleListChange(e.target.value, 'sangria', index, 'responsavel')} className="p-2 border rounded-md flex-grow"/><CalculatorInput value={item.valor} onChange={val => handleListChange(val, 'sangria', index, 'valor')} className="w-32" /><button type="button" onClick={() => removeListItem('sangria', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></div>))}<button type="button" onClick={() => addListItem('sangria')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Sangria</button></div>
-                <hr/>
-                <div><h4 className="text-lg font-semibold mb-2 text-green-600">Suprimento (Entradas)</h4>{formData.suprimento.map((item, index) => (<div key={index} className="flex gap-2 mb-2 items-center"><input type="text" placeholder="Responsável" value={item.responsavel} onChange={(e) => handleListChange(e.target.value, 'suprimento', index, 'responsavel')} className="p-2 border rounded-md flex-grow"/><CalculatorInput value={item.valor} onChange={val => handleListChange(val, 'suprimento', index, 'valor')} className="w-32" /><button type="button" onClick={() => removeListItem('suprimento', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></div>))}<button type="button" onClick={() => addListItem('suprimento')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Suprimento</button></div>
-            </div></div>
+                <div className="bg-white p-4 rounded-lg shadow-md"><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-sm font-medium text-gray-600">Data do Fechamento</label><input type="date" value={formData.date} onChange={handleDateChange} className="p-2 border rounded-md w-full mt-1" required /></div><div><label className="block text-sm font-medium text-gray-600">Abertura de Caixa (R$)</label><CalculatorInput value={formData.aberturaCaixa} onChange={val => setFormData({ ...formData, aberturaCaixa: val })} /></div></div></div>
+                {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner /></div> : (
+                    <>
+                        <div className="mt-4"><h3 className="text-xl font-bold mb-2 text-white drop-shadow-md">Recebimentos</h3><div className="grid md:grid-cols-2 gap-4"><ReceiptsTable period="almoco" data={formData.almoco} onChange={handleReceiptChange} /><ReceiptsTable period="jantar" data={formData.jantar} onChange={handleReceiptChange} /></div></div>
 
-            <div className="mt-4"><h3 className="text-xl font-bold mb-2 text-white drop-shadow-md">Custos e Despesas</h3><div className="space-y-4">
-                <div className="bg-white p-4 rounded-lg shadow-md"><h4 className="text-lg font-bold mb-4">Pagamentos Diretos do Caixa</h4>{(formData.pagamentosCaixa || []).map((item, index) => (<div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2"><select value={item.categoria} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'categoria')} className="p-2 border rounded-md w-full"><option disabled>Selecione a Categoria</option>{supplierCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select><input type="text" placeholder="Descrição do Pagamento" value={item.referente} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'referente')} className="p-2 border rounded-md w-full"/><div className="flex items-center gap-2"><CalculatorInput value={item.valor} onChange={val => handleListChange(val, 'pagamentosCaixa', index, 'valor')} className="flex-grow" /></div> <div className="flex items-center gap-2"> <select value={item.formaPagamento || 'dinheiro'} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'formaPagamento')} className="p-2 border rounded-md w-full">{expensePaymentMethods.map(m => <option key={m} value={m} className="capitalize">{paymentMethodLabels[m]}</option>)}</select> <button type="button" onClick={() => removeListItem('pagamentosCaixa', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon/></button></div></div>))}<button type="button" onClick={() => addListItem('pagamentosCaixa')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Pagamento</button></div>
-                <div><div className="bg-white p-4 rounded-lg shadow-md mb-4"><h4 className="text-lg font-bold mb-4">Valores por Entrega</h4><div className="grid grid-cols-2 gap-4">
-                    {Object.keys(formData.deliveryRates).map(rateKey => (<div key={rateKey}><label className="block text-sm font-medium text-gray-600 capitalize">Valor {rateKey}</label><CalculatorInput value={formData.deliveryRates[rateKey]} onChange={val => setFormData({...formData, deliveryRates: {...formData.deliveryRates, [rateKey]: val}})} /></div>))}
-                </div></div><DeliverersCostsTable data={formData.entregadores || []} rates={formData.deliveryRates} onChange={handleListChange} onAdd={addListItem} onRemove={removeListItem} /></div>
-                <SignedAccountsTable data={formData.contasAssinadas || []} beneficiaries={beneficiaries} onChange={handleListChange} onAdd={addListItem} onRemove={removeListItem} onAddBeneficiary={onAddBeneficiary} onManageBeneficiaries={onManageBeneficiaries} />
-            </div></div>
-            <div className="mt-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg"><h3 className="text-xl font-bold mb-4">Resumo do Dia</h3>
-                <div className="grid grid-cols-2 gap-2 text-center">
-                    {allPaymentMethods.map(method => (
-                         <div key={method} className="p-2 bg-gray-700 rounded-lg"><h4 className="text-xs font-semibold text-gray-300 capitalize">{paymentMethodLabels[method]}</h4><p className="text-md font-bold font-accounting">{formatCurrencyDisplay(summaryTotals[method])}</p></div>
-                    ))}
-                </div>
-                <div className="mt-4 border-t border-gray-600 pt-4 grid grid-cols-2 gap-2 text-center">
-                     <div className="p-2 bg-blue-900/50 rounded-lg"><h4 className="text-xs font-semibold text-blue-200">Total Bruto</h4><p className="text-lg font-bold font-accounting">{formatCurrencyDisplay(summaryTotals.totalBruto)}</p></div>
-                     <div className="p-2 bg-red-900/50 rounded-lg"><h4 className="text-xs font-semibold text-red-200">Total Despesas</h4><p className="text-lg font-bold font-accounting">{formatCurrencyDisplay(summaryTotals.totalDespesas)}</p></div>
-                     <div className="p-2 bg-green-900/50 rounded-lg"><h4 className="text-xs font-semibold text-green-200">Resultado Líquido</h4><p className="text-lg font-bold font-accounting">{formatCurrencyDisplay(summaryTotals.resultadoLiquido)}</p></div>
-                     <div className="p-2 bg-yellow-900/50 rounded-lg"><h4 className="text-xs font-semibold text-yellow-200">Caixa Final</h4><p className="text-lg font-bold font-accounting">{formatCurrencyDisplay(summaryTotals.caixaFinal)}</p></div>
-                </div>
-            </div>
-            </>
-            )}
-            <div className="mt-6 flex justify-end gap-4"><button type="submit" className="py-3 px-6 bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-md font-semibold w-full">{isEditing ? "Atualizar Fechamento" : "Salvar Fechamento"}</button></div>
-        </form></div>
+                        <div className="mt-4 bg-white p-4 rounded-lg shadow-md"><h3 className="text-xl font-bold mb-4">Movimentações de Caixa</h3><div className="space-y-4">
+                            <div>
+                                <h4 className="text-lg font-semibold mb-2 text-green-700">Recebimento de Contas Assinadas</h4>
+                                {(formData.recebimentosContasAssinadas || []).map((item, index) => (
+                                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2 items-center">
+                                        <div className="md:col-span-1"><label className="text-xs text-gray-500">Beneficiário</label><select value={item.beneficiarioId} onChange={(e) => handleListChange(e.target.value, 'recebimentosContasAssinadas', index, 'beneficiarioId')} className="p-2 border rounded-md w-full"><option value="">Selecione</option>{beneficiaries.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
+                                        <div><label className="text-xs text-gray-500">Dívida Total</label><input type="text" readOnly value={formatCurrencyDisplay(beneficiaryDebts.get(item.beneficiarioId) || 0)} className="p-2 border rounded-md w-full bg-gray-100 text-center" /></div>
+                                        <div><label className="text-xs text-gray-500">Valor Recebido</label><CalculatorInput value={item.valorRecebido || 0} onChange={val => handleListChange(val, 'recebimentosContasAssinadas', index, 'valorRecebido')} /></div>
+                                        <div className="flex items-end gap-2"><div className="flex-grow"><label className="text-xs text-gray-500">Forma Pag.</label><select value={item.formaPagamento} onChange={(e) => handleListChange(e.target.value, 'recebimentosContasAssinadas', index, 'formaPagamento')} className="p-2 border rounded-md w-full">{allPaymentMethods.map(m => <option key={m} value={m} className="capitalize">{paymentMethodLabels[m]}</option>)}</select></div><button type="button" onClick={() => removeListItem('recebimentosContasAssinadas', index)} className="text-red-500 hover:text-red-700 p-2 mb-1"><TrashIcon /></button></div>
+                                    </div>
+                                ))}
+                                <button type="button" onClick={() => addListItem('recebimentosContasAssinadas')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Recebimento</button>
+                            </div>
+                            <hr />
+                            <div><h4 className="text-lg font-semibold mb-2 text-red-600">Sangria (Saídas)</h4>{formData.sangria.map((item, index) => (<div key={index} className="flex gap-2 mb-2 items-center"><input type="text" placeholder="Responsável" value={item.responsavel} onChange={(e) => handleListChange(e.target.value, 'sangria', index, 'responsavel')} className="p-2 border rounded-md flex-grow" /><CalculatorInput value={item.valor} onChange={val => handleListChange(val, 'sangria', index, 'valor')} className="w-32" /><button type="button" onClick={() => removeListItem('sangria', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon /></button></div>))}<button type="button" onClick={() => addListItem('sangria')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Sangria</button></div>
+                            <hr />
+                            <div><h4 className="text-lg font-semibold mb-2 text-green-600">Suprimento (Entradas)</h4>{formData.suprimento.map((item, index) => (<div key={index} className="flex gap-2 mb-2 items-center"><input type="text" placeholder="Responsável" value={item.responsavel} onChange={(e) => handleListChange(e.target.value, 'suprimento', index, 'responsavel')} className="p-2 border rounded-md flex-grow" /><CalculatorInput value={item.valor} onChange={val => handleListChange(val, 'suprimento', index, 'valor')} className="w-32" /><button type="button" onClick={() => removeListItem('suprimento', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon /></button></div>))}<button type="button" onClick={() => addListItem('suprimento')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Suprimento</button></div>
+                        </div></div>
+
+                        <div className="mt-4"><h3 className="text-xl font-bold mb-2 text-white drop-shadow-md">Custos e Despesas</h3><div className="space-y-4">
+                            <div className="bg-white p-4 rounded-lg shadow-md"><h4 className="text-lg font-bold mb-4">Pagamentos Diretos do Caixa</h4>{(formData.pagamentosCaixa || []).map((item, index) => (<div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2"><select value={item.categoria} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'categoria')} className="p-2 border rounded-md w-full"><option disabled>Selecione a Categoria</option>{supplierCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select><input type="text" placeholder="Descrição do Pagamento" value={item.referente} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'referente')} className="p-2 border rounded-md w-full" /><div className="flex items-center gap-2"><CalculatorInput value={item.valor} onChange={val => handleListChange(val, 'pagamentosCaixa', index, 'valor')} className="flex-grow" /></div> <div className="flex items-center gap-2"> <select value={item.formaPagamento || 'dinheiro'} onChange={(e) => handleListChange(e.target.value, 'pagamentosCaixa', index, 'formaPagamento')} className="p-2 border rounded-md w-full">{expensePaymentMethods.map(m => <option key={m} value={m} className="capitalize">{paymentMethodLabels[m]}</option>)}</select> <button type="button" onClick={() => removeListItem('pagamentosCaixa', index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon /></button></div></div>))}<button type="button" onClick={() => addListItem('pagamentosCaixa')} className="text-blue-600 hover:text-blue-800 text-sm mt-2 font-medium">Adicionar Pagamento</button></div>
+                            <div><div className="bg-white p-4 rounded-lg shadow-md mb-4"><h4 className="text-lg font-bold mb-4">Valores por Entrega</h4><div className="grid grid-cols-2 gap-4">
+                                {Object.keys(formData.deliveryRates).map(rateKey => (<div key={rateKey}><label className="block text-sm font-medium text-gray-600 capitalize">Valor {rateKey}</label><CalculatorInput value={formData.deliveryRates[rateKey]} onChange={val => setFormData({ ...formData, deliveryRates: { ...formData.deliveryRates, [rateKey]: val } })} /></div>))}
+                            </div></div><DeliverersCostsTable data={formData.entregadores || []} rates={formData.deliveryRates} onChange={handleListChange} onAdd={addListItem} onRemove={removeListItem} /></div>
+                            <SignedAccountsTable data={formData.contasAssinadas || []} beneficiaries={beneficiaries} onChange={handleListChange} onAdd={addListItem} onRemove={removeListItem} onAddBeneficiary={onAddBeneficiary} onManageBeneficiaries={onManageBeneficiaries} />
+                        </div></div>
+                        <div className="mt-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg"><h3 className="text-xl font-bold mb-4">Resumo do Dia</h3>
+                            <div className="grid grid-cols-2 gap-2 text-center">
+                                {allPaymentMethods.map(method => (
+                                    <div key={method} className="p-2 bg-gray-700 rounded-lg"><h4 className="text-xs font-semibold text-gray-300 capitalize">{paymentMethodLabels[method]}</h4><p className="text-md font-bold font-accounting">{formatCurrencyDisplay(summaryTotals[method])}</p></div>
+                                ))}
+                            </div>
+                            <div className="mt-4 border-t border-gray-600 pt-4 grid grid-cols-2 gap-2 text-center">
+                                <div className="p-2 bg-blue-900/50 rounded-lg"><h4 className="text-xs font-semibold text-blue-200">Total Bruto</h4><p className="text-lg font-bold font-accounting">{formatCurrencyDisplay(summaryTotals.totalBruto)}</p></div>
+                                <div className="p-2 bg-red-900/50 rounded-lg"><h4 className="text-xs font-semibold text-red-200">Total Despesas</h4><p className="text-lg font-bold font-accounting">{formatCurrencyDisplay(summaryTotals.totalDespesas)}</p></div>
+                                <div className="p-2 bg-green-900/50 rounded-lg"><h4 className="text-xs font-semibold text-green-200">Resultado Líquido</h4><p className="text-lg font-bold font-accounting">{formatCurrencyDisplay(summaryTotals.resultadoLiquido)}</p></div>
+                                <div className="p-2 bg-yellow-900/50 rounded-lg"><h4 className="text-xs font-semibold text-yellow-200">Caixa Final</h4><p className="text-lg font-bold font-accounting">{formatCurrencyDisplay(summaryTotals.caixaFinal)}</p></div>
+                            </div>
+                        </div>
+                    </>
+                )}
+                <div className="mt-6 flex justify-end gap-4"><button type="submit" className="py-3 px-6 bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-md font-semibold w-full">{isEditing ? "Atualizar Fechamento" : "Salvar Fechamento"}</button></div>
+            </form></div>
         </div>
     );
 }
@@ -734,20 +734,35 @@ function DailyCashFlowReport({ closings, companyName, onShowMessage, scriptsRead
                 }
             });
 
+            // REMOVIDO: Sangrias e Suprimentos não entram mais no relatório de caixa (apenas fluxo de dinheiro 'limpo')
+            /*
             (c.suprimento || []).forEach(s => {
                 if (s.valor > 0) transactions.push({ date: c.date, description: `Suprimento (${s.responsavel})`, value: s.valor });
             });
+            */
 
             (c.pagamentosCaixa || []).forEach(f => {
-                if (f.valor > 0) transactions.push({ date: c.date, description: `Pag. Direto: ${f.referente}`, value: -f.valor });
+                // Pagamentos apenas em dinheiro
+                if (f.valor > 0 && (f.formaPagamento === 'dinheiro' || !f.formaPagamento)) {
+                    transactions.push({ date: c.date, description: `Pag. Direto: ${f.referente}`, value: -f.valor });
+                }
             });
 
-            const totalEntregadores = (c.entregadores || []).reduce((sum, d) => sum + d.diaria + (d.brotas * c.deliveryRates.brotas) + (d.torrinha * c.deliveryRates.torrinha) + (d.retorno * c.deliveryRates.retorno) + (d.outras * c.deliveryRates.outras), 0);
-            if (totalEntregadores > 0) transactions.push({ date: c.date, description: 'Pagamento Entregadores', value: -totalEntregadores });
+            const totalEntregadoresDinheiro = (c.entregadores || []).reduce((sum, d) => {
+                // Se for dinheiro (ou indefinido, assumindo legado como dinheiro, ou forçamos a escolha no futuro)
+                if (d.formaPagamento === 'dinheiro' || !d.formaPagamento) {
+                    return sum + d.diaria + (d.brotas * c.deliveryRates.brotas) + (d.torrinha * c.deliveryRates.torrinha) + (d.retorno * c.deliveryRates.retorno) + (d.outras * c.deliveryRates.outras);
+                }
+                return sum;
+            }, 0);
 
+            if (totalEntregadoresDinheiro > 0) transactions.push({ date: c.date, description: 'Pagamento Entregadores (Dinheiro)', value: -totalEntregadoresDinheiro });
+
+            /*
             (c.sangria || []).forEach(s => {
                 if (s.valor > 0) transactions.push({ date: c.date, description: `Sangria (${s.responsavel})`, value: -s.valor });
             });
+            */
         }
         return transactions.sort((a, b) => a.date.localeCompare(b.date));
     }, [startDate, endDate, closings]);
@@ -832,7 +847,7 @@ function SalesReportGenerator({ closings, companyName, onShowMessage, exportToPd
                 row[`sales${capitalizedChannel}`] = channelSales;
                 row[`pax${capitalizedChannel}`] = channelPax;
             });
-            
+
             // Adicionar contas assinadas novas ao total de vendas do dia
             const novasContasAssinadas = (closing.contasAssinadas || []).reduce((sum, item) => sum + item.valor, 0);
             row.totalDaySales = row.salesSalao + row.salesBalcao + row.salesDelivery + novasContasAssinadas;
@@ -858,7 +873,7 @@ function SalesReportGenerator({ closings, companyName, onShowMessage, exportToPd
             salesDelivery: 0, paxDelivery: 0,
             totalDaySales: 0, totalDayPax: 0,
         });
-        
+
         grandTotals.ticketMedio = grandTotals.totalDayPax > 0 ? grandTotals.totalDaySales / grandTotals.totalDayPax : 0;
 
         return { dailyRows, grandTotals };
@@ -887,11 +902,11 @@ function SalesReportGenerator({ closings, companyName, onShowMessage, exportToPd
         window.XLSX.utils.book_append_sheet(wb, ws, "Relatório de Vendas");
         window.XLSX.writeFile(wb, `relatorio_vendas_${companyName}_${selectedMonth}.xlsx`);
     };
-    
+
     const handleExportPdf = () => {
         if (!scriptsReady.pdf) { onShowMessage("Aguarde", "A biblioteca de exportação PDF ainda não foi carregada."); return; }
         const head = [
-            [{ content: 'Data', rowSpan: 2, styles: { valign: 'middle'} }, { content: 'Salão', colSpan: 2, styles: { halign: 'center' } }, { content: 'Balcão', colSpan: 2, styles: { halign: 'center' } }, { content: 'Delivery', colSpan: 2, styles: { halign: 'center' } }, { content: 'Totais', colSpan: 3, styles: { halign: 'center' } }],
+            [{ content: 'Data', rowSpan: 2, styles: { valign: 'middle' } }, { content: 'Salão', colSpan: 2, styles: { halign: 'center' } }, { content: 'Balcão', colSpan: 2, styles: { halign: 'center' } }, { content: 'Delivery', colSpan: 2, styles: { halign: 'center' } }, { content: 'Totais', colSpan: 3, styles: { halign: 'center' } }],
             ['Vendas', 'PAX', 'Vendas', 'PAX', 'Vendas', 'PAX', 'Vendas', 'PAX', 'Ticket Médio']
         ];
         const body = reportData.dailyRows.map(row => [
@@ -1029,7 +1044,7 @@ function SignedAccountsReportGenerator({ closings, beneficiaries, companyName, o
     const reportData = useMemo(() => {
         const transactions = [];
         const allClosingsSorted = [...closings].sort((a, b) => a.date.localeCompare(b.date));
-        
+
         let openingBalance = 0;
         allClosingsSorted.filter(c => c.date < startDate).forEach(c => {
             if (selectedBeneficiaryId === 'all' || (c.contasAssinadas || []).some(t => t.beneficiarioId === selectedBeneficiaryId) || (c.pagamentosContasAssinadas || []).some(t => t.beneficiarioId === selectedBeneficiaryId) || (c.recebimentosContasAssinadas || []).some(t => t.beneficiarioId === selectedBeneficiaryId)) {
@@ -1079,25 +1094,25 @@ function SignedAccountsReportGenerator({ closings, beneficiaries, companyName, o
             ['', '', 'SALDO INICIAL', '', '', formatCurrencyDisplay(reportData.openingBalance)],
             ['', '', 'SALDO FINAL', '', '', formatCurrencyDisplay(reportData.closingBalance)]
         ];
-        
+
         const beneficiaryName = selectedBeneficiaryId === 'all' ? 'Todos' : (beneficiariesMap.get(selectedBeneficiaryId) || 'Desconhecido');
         const fileName = `extrato_contas_${companyName}_${beneficiaryName}`.replace(/ /g, '_');
 
         if (format === 'pdf') {
             exportToPdf(`Extrato de Contas Assinadas`, headers, body, summary, `${fileName}.pdf`, true);
         } else {
-             const dataToExport = [
-                {A: 'SALDO INICIAL', F: reportData.openingBalance},
+            const dataToExport = [
+                { A: 'SALDO INICIAL', F: reportData.openingBalance },
                 {},
-                {A: 'Data', B: 'Beneficiário', C: 'Tipo/Obs.', D: 'Débito', E: 'Crédito', F: 'Saldo'},
+                { A: 'Data', B: 'Beneficiário', C: 'Tipo/Obs.', D: 'Débito', E: 'Crédito', F: 'Saldo' },
                 ...reportData.transactions.map(t => {
                     const isDebit = t.type === 'Dívida Nova';
                     return { A: new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR'), B: t.beneficiaryName, C: t.observacao || t.type, D: isDebit ? t.value : '', E: !isDebit ? t.value : '', F: t.balance };
                 }),
                 {},
-                {A: 'SALDO FINAL', F: reportData.closingBalance}
+                { A: 'SALDO FINAL', F: reportData.closingBalance }
             ];
-            const ws = window.XLSX.utils.json_to_sheet(dataToExport, {header: ["A","B","C","D","E","F"], skipHeader: true});
+            const ws = window.XLSX.utils.json_to_sheet(dataToExport, { header: ["A", "B", "C", "D", "E", "F"], skipHeader: true });
             const wb = window.XLSX.utils.book_new();
             window.XLSX.utils.book_append_sheet(wb, ws, "Extrato");
             window.XLSX.writeFile(wb, `${fileName}.xlsx`);
@@ -1177,7 +1192,7 @@ const BeneficiaryModal = ({ isOpen, onSave, onCancel, showMessage }) => {
         <Modal isOpen={isOpen} title="Cadastrar Novo Beneficiário" onConfirm={handleSave} onCancel={onCancel} confirmText="Salvar">
             <div className="text-left">
                 <label htmlFor="beneficiaryName" className="block text-sm font-medium text-gray-700">Nome do Beneficiário</label>
-                <input type="text" id="beneficiaryName" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ex: João da Silva"/>
+                <input type="text" id="beneficiaryName" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ex: João da Silva" />
             </div>
         </Modal>
     );
@@ -1209,7 +1224,7 @@ const ManageBeneficiariesModal = ({ isOpen, onCancel, beneficiaries, onUpdate, o
 
     return (
         <Modal isOpen={isOpen} title="Gerir Beneficiários" onCancel={onCancel}>
-             <div className="text-left max-h-96 overflow-y-auto">
+            <div className="text-left max-h-96 overflow-y-auto">
                 {beneficiaries.map(b => (
                     <div key={b.id} className="flex items-center justify-between p-2 border-b">
                         {editingId === b.id ? (
@@ -1218,17 +1233,17 @@ const ManageBeneficiariesModal = ({ isOpen, onCancel, beneficiaries, onUpdate, o
                             <span className="flex-grow">{b.name}</span>
                         )}
                         <div className="flex gap-2 ml-4">
-                             {editingId === b.id ? (
+                            {editingId === b.id ? (
                                 <>
                                     <button onClick={handleSave} className="text-green-600 hover:text-green-800">Salvar</button>
                                     <button onClick={handleCancelEdit} className="text-gray-500 hover:text-gray-700">Cancelar</button>
                                 </>
-                             ) : (
+                            ) : (
                                 <>
                                     <button onClick={() => handleEdit(b)} className="text-blue-600 hover:text-blue-800 p-1"><EditIcon /></button>
                                     <button onClick={() => onDelete(b.id, b.name)} className="text-red-500 hover:text-red-700 p-1"><TrashIcon /></button>
                                 </>
-                             )}
+                            )}
                         </div>
                     </div>
                 ))}
@@ -1252,244 +1267,244 @@ const Header = ({ companyName, onLogout }) => {
 
 // --- Componente Principal ---
 export default function App() {
-  const [authenticatedCompany, setAuthenticatedCompany] = useState(null);
-  const [companies, setCompanies] = useState([]);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [loadingConfig, setLoadingConfig] = useState(true);
-  const [activeView, setActiveView] = useState('history'); // history, add, reports
-  const [editingDate, setEditingDate] = useState(null);
-  const [closings, setClosings] = useState([]);
-  const [loadingClosings, setLoadingClosings] = useState(true);
-  const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', onConfirm: null, children: null });
-  const [isBeneficiaryModalOpen, setIsBeneficiaryModalOpen] = useState(false);
-  const [isManageBeneficiariesModalOpen, setIsManageBeneficiariesModalOpen] = useState(false);
-  const [beneficiaries, setBeneficiaries] = useState([]);
-  const [scriptsReady, setScriptsReady] = useState({ pdf: false, xlsx: false });
+    const [authenticatedCompany, setAuthenticatedCompany] = useState(null);
+    const [companies, setCompanies] = useState([]);
+    const [isAuthReady, setIsAuthReady] = useState(false);
+    const [loadingConfig, setLoadingConfig] = useState(true);
+    const [activeView, setActiveView] = useState('history'); // history, add, reports
+    const [editingDate, setEditingDate] = useState(null);
+    const [closings, setClosings] = useState([]);
+    const [loadingClosings, setLoadingClosings] = useState(true);
+    const [modalState, setModalState] = useState({ isOpen: false, title: '', message: '', onConfirm: null, children: null });
+    const [isBeneficiaryModalOpen, setIsBeneficiaryModalOpen] = useState(false);
+    const [isManageBeneficiariesModalOpen, setIsManageBeneficiariesModalOpen] = useState(false);
+    const [beneficiaries, setBeneficiaries] = useState([]);
+    const [scriptsReady, setScriptsReady] = useState({ pdf: false, xlsx: false });
 
 
-  const showModal = (title, message, onConfirm = null) => {
-    setModalState({ isOpen: true, title, message, onConfirm: onConfirm ? () => { hideModal(); onConfirm(); } : null });
-  };
-  const hideModal = () => setModalState({ isOpen: false, title: '', message: '', onConfirm: null });
-
-  useEffect(() => {
-    const loadScript = (id, src) => {
-        return new Promise((resolve, reject) => {
-            if (document.getElementById(id)) {
-                resolve();
-                return;
-            }
-            const script = document.createElement('script');
-            script.id = id;
-            script.src = src;
-            script.async = true;
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-            document.head.appendChild(script);
-        });
+    const showModal = (title, message, onConfirm = null) => {
+        setModalState({ isOpen: true, title, message, onConfirm: onConfirm ? () => { hideModal(); onConfirm(); } : null });
     };
+    const hideModal = () => setModalState({ isOpen: false, title: '', message: '', onConfirm: null });
 
-    const loadExportScripts = async () => {
-        try {
-            await loadScript('xlsx-script', "https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js");
-            setScriptsReady(prev => ({ ...prev, xlsx: true }));
+    useEffect(() => {
+        const loadScript = (id, src) => {
+            return new Promise((resolve, reject) => {
+                if (document.getElementById(id)) {
+                    resolve();
+                    return;
+                }
+                const script = document.createElement('script');
+                script.id = id;
+                script.src = src;
+                script.async = true;
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+                document.head.appendChild(script);
+            });
+        };
 
-            await loadScript('jspdf-script', "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
-            await loadScript('jspdf-autotable-script', "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
-            setScriptsReady(prev => ({ ...prev, pdf: true }));
-
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    loadExportScripts();
-  }, []);
-
-  const exportToPdf = (title, head, body, foot, fileName, showSummary = false) => {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.text(title, 14, 15);
-    doc.autoTable({
-        head: head,
-        body: body,
-        foot: showSummary ? undefined : foot,
-        startY: 20,
-        theme: 'grid',
-        footStyles: { fillColor: [220, 220, 220], textColor: 0, fontStyle: 'bold' }
-    });
-    if(showSummary && foot){
-        doc.autoTable({
-            body: foot,
-            startY: doc.lastAutoTable.finalY + 5,
-            theme: 'plain',
-            styles: { fontStyle: 'bold' }
-        })
-    }
-    doc.save(fileName);
-  };
-
-  useEffect(() => {
-    const authAndListen = async () => {
-        try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } 
-            else { await signInAnonymously(auth); }
-        } catch (error) { console.error("Firebase auth failed:", error); }
-        onAuthStateChanged(auth, (user) => setIsAuthReady(true));
-    };
-    authAndListen();
-  }, []);
-
-  useEffect(() => {
-    if (!isAuthReady) return;
-    const docRef = doc(db, configDocPath);
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists() && docSnap.data().list) { setCompanies(docSnap.data().list); } 
-      else { setDoc(docRef, { list: initialCompanies }); setCompanies(initialCompanies); }
-      setLoadingConfig(false);
-    }, (error) => { console.error("Error fetching companies config:", error); setCompanies(initialCompanies); setLoadingConfig(false); });
-    return () => unsubscribe();
-  }, [isAuthReady]);
-
-  useEffect(() => {
-    if (!authenticatedCompany) return;
-    setLoadingClosings(true);
-    
-    const closingsCollectionPath = `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`;
-    const qClosings = query(collection(db, closingsCollectionPath));
-    const unsubClosings = onSnapshot(qClosings, (snapshot) => {
-      const closingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setClosings(closingsData);
-      setLoadingClosings(false);
-    }, (error) => { console.error("Erro ao buscar fechamentos:", error); setLoadingClosings(false); });
-
-    const beneficiariesCollectionPath = `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/beneficiaries`;
-    const qBeneficiaries = query(collection(db, beneficiariesCollectionPath), orderBy('name'));
-    const unsubBeneficiaries = onSnapshot(qBeneficiaries, (snapshot) => {
-        const beneficiariesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setBeneficiaries(beneficiariesData);
-    }, (error) => { console.error("Erro ao buscar beneficiários:", error); });
-
-    return () => { unsubClosings(); unsubBeneficiaries(); };
-  }, [authenticatedCompany]);
-
-
-  const handleLoginSuccess = (company) => { setAuthenticatedCompany(company); };
-  const handleLogout = () => { setAuthenticatedCompany(null); setActiveView('history'); };
-
-  const handleSave = async (data) => {
-    showModal(
-        "Confirmar Salvamento",
-        "Deseja salvar este fechamento?",
-        async () => {
+        const loadExportScripts = async () => {
             try {
-                const docId = data.date;
-                const docRef = doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`, docId);
-                await setDoc(docRef, data, { merge: true });
-                showModal("Sucesso!", `Fechamento de ${new Date(data.date + 'T12:00:00').toLocaleDateString('pt-BR')} salvo com sucesso!`);
-                setActiveView('history');
-            } catch (error) { 
-                console.error("Erro ao salvar: ", error); 
-                showModal('Erro', 'Ocorreu um erro ao salvar o fechamento.'); 
-            }
-        }
-    );
-  };
- 
-  const handleDelete = async (id, date) => {
-      const formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('pt-BR');
-      showModal("Confirmar Exclusão", `Tem certeza que deseja excluir o fechamento do dia ${formattedDate}?`,
-          async () => {
-              try { 
-                  await deleteDoc(doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`, id)); 
-                  showModal('Sucesso', 'O fechamento foi excluído.'); 
-              }
-              catch(error) { console.error("Erro ao excluir:", error); showModal('Erro', 'Falha ao excluir.'); }
-          }
-      );
-  }
+                await loadScript('xlsx-script', "https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js");
+                setScriptsReady(prev => ({ ...prev, xlsx: true }));
 
-  const handleSaveBeneficiary = async (name) => {
-    try {
-        const beneficiariesCollectionPath = `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/beneficiaries`;
-        await addDoc(collection(db, beneficiariesCollectionPath), { name });
-        showModal("Sucesso", `Beneficiário "${name}" cadastrado.`);
-        setIsBeneficiaryModalOpen(false);
-    } catch (error) { console.error("Erro ao salvar beneficiário:", error); showModal("Erro", "Não foi possível salvar o beneficiário."); }
-  };
+                await loadScript('jspdf-script', "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+                await loadScript('jspdf-autotable-script', "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+                setScriptsReady(prev => ({ ...prev, pdf: true }));
 
-  const handleUpdateBeneficiary = async (id, newName) => {
-    try {
-        const docRef = doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/beneficiaries`, id);
-        await updateDoc(docRef, { name: newName });
-        showModal("Sucesso", "Nome do beneficiário atualizado.");
-    } catch (error) {
-        console.error("Erro ao atualizar beneficiário:", error);
-        showModal("Erro", "Não foi possível atualizar o nome.");
-    }
-  };
-
-  const handleDeleteBeneficiary = async (id, name) => {
-    showModal("Confirmar Exclusão", `Tem certeza que deseja excluir o beneficiário "${name}"? Esta ação não pode ser desfeita.`, 
-        async () => {
-             try {
-                const docRef = doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/beneficiaries`, id);
-                await deleteDoc(docRef);
-                showModal("Sucesso", "Beneficiário excluído.");
             } catch (error) {
-                console.error("Erro ao excluir beneficiário:", error);
-                showModal("Erro", "Não foi possível excluir o beneficiário.");
+                console.error(error);
             }
+        };
+
+        loadExportScripts();
+    }, []);
+
+    const exportToPdf = (title, head, body, foot, fileName, showSummary = false) => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text(title, 14, 15);
+        doc.autoTable({
+            head: head,
+            body: body,
+            foot: showSummary ? undefined : foot,
+            startY: 20,
+            theme: 'grid',
+            footStyles: { fillColor: [220, 220, 220], textColor: 0, fontStyle: 'bold' }
+        });
+        if (showSummary && foot) {
+            doc.autoTable({
+                body: foot,
+                startY: doc.lastAutoTable.finalY + 5,
+                theme: 'plain',
+                styles: { fontStyle: 'bold' }
+            })
         }
-    );
-  };
+        doc.save(fileName);
+    };
+
+    useEffect(() => {
+        const authAndListen = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); }
+                else { await signInAnonymously(auth); }
+            } catch (error) { console.error("Firebase auth failed:", error); }
+            onAuthStateChanged(auth, (user) => setIsAuthReady(true));
+        };
+        authAndListen();
+    }, []);
+
+    useEffect(() => {
+        if (!isAuthReady) return;
+        const docRef = doc(db, configDocPath);
+        const unsubscribe = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().list) { setCompanies(docSnap.data().list); }
+            else { setDoc(docRef, { list: initialCompanies }); setCompanies(initialCompanies); }
+            setLoadingConfig(false);
+        }, (error) => { console.error("Error fetching companies config:", error); setCompanies(initialCompanies); setLoadingConfig(false); });
+        return () => unsubscribe();
+    }, [isAuthReady]);
+
+    useEffect(() => {
+        if (!authenticatedCompany) return;
+        setLoadingClosings(true);
+
+        const closingsCollectionPath = `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`;
+        const qClosings = query(collection(db, closingsCollectionPath));
+        const unsubClosings = onSnapshot(qClosings, (snapshot) => {
+            const closingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setClosings(closingsData);
+            setLoadingClosings(false);
+        }, (error) => { console.error("Erro ao buscar fechamentos:", error); setLoadingClosings(false); });
+
+        const beneficiariesCollectionPath = `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/beneficiaries`;
+        const qBeneficiaries = query(collection(db, beneficiariesCollectionPath), orderBy('name'));
+        const unsubBeneficiaries = onSnapshot(qBeneficiaries, (snapshot) => {
+            const beneficiariesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setBeneficiaries(beneficiariesData);
+        }, (error) => { console.error("Erro ao buscar beneficiários:", error); });
+
+        return () => { unsubClosings(); unsubBeneficiaries(); };
+    }, [authenticatedCompany]);
 
 
-  const handleEdit = (closing) => { setEditingDate(closing.date); setActiveView('add'); }
-  const handleAddNew = () => { setEditingDate(null); setActiveView('add'); }
+    const handleLoginSuccess = (company) => { setAuthenticatedCompany(company); };
+    const handleLogout = () => { setAuthenticatedCompany(null); setActiveView('history'); };
 
-  const renderPage = () => {
-      if (!isAuthReady || loadingConfig) { return <LoadingScreen />; }
-      if (!authenticatedCompany) { return <LoginScreen companies={companies} onLoginSuccess={handleLoginSuccess} />; }
+    const handleSave = async (data) => {
+        showModal(
+            "Confirmar Salvamento",
+            "Deseja salvar este fechamento?",
+            async () => {
+                try {
+                    const docId = data.date;
+                    const docRef = doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`, docId);
+                    await setDoc(docRef, data, { merge: true });
+                    showModal("Sucesso!", `Fechamento de ${new Date(data.date + 'T12:00:00').toLocaleDateString('pt-BR')} salvo com sucesso!`);
+                    setActiveView('history');
+                } catch (error) {
+                    console.error("Erro ao salvar: ", error);
+                    showModal('Erro', 'Ocorreu um erro ao salvar o fechamento.');
+                }
+            }
+        );
+    };
 
-      let currentView;
-      switch (activeView) {
-        case 'add':
-            currentView = <AddClosingScreen onSave={handleSave} onCancel={() => setActiveView('history')} companyId={authenticatedCompany.id} initialDate={editingDate} beneficiaries={beneficiaries} closings={closings} onAddBeneficiary={() => setIsBeneficiaryModalOpen(true)} onManageBeneficiaries={() => setIsManageBeneficiariesModalOpen(true)} showModal={showModal} />;
-            break;
-        case 'reports':
-            currentView = <ReportsScreen closings={closings} beneficiaries={beneficiaries} companyName={authenticatedCompany.name} onLogout={handleLogout} onShowMessage={showModal} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />;
-            break;
-        case 'history':
-        default:
-            currentView = <HistoryScreen closings={closings} onEdit={handleEdit} onDelete={handleDelete} onAddNew={handleAddNew} />;
-            break;
-      }
+    const handleDelete = async (id, date) => {
+        const formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('pt-BR');
+        showModal("Confirmar Exclusão", `Tem certeza que deseja excluir o fechamento do dia ${formattedDate}?`,
+            async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/daily_closings`, id));
+                    showModal('Sucesso', 'O fechamento foi excluído.');
+                }
+                catch (error) { console.error("Erro ao excluir:", error); showModal('Erro', 'Falha ao excluir.'); }
+            }
+        );
+    }
 
-      return (
-        <div className="relative min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop')" }}>
-             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
-             <div className="relative z-10">
-                 <Header companyName={authenticatedCompany.name} onLogout={handleLogout} />
-                 <div className="pb-16">{currentView}</div>
-                 <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/10 backdrop-blur-lg border-t border-white/20 flex justify-around items-center">
-                     <button onClick={() => setActiveView('history')} className={`flex flex-col items-center transition-colors ${activeView === 'history' ? 'text-blue-400' : 'text-gray-300'}`}><HomeIcon className="h-6 w-6" /><span className="text-xs">Histórico</span></button>
-                     <button onClick={handleAddNew} className={`flex flex-col items-center transition-colors ${activeView === 'add' ? 'text-blue-400' : 'text-gray-300'}`}><PlusCircleIcon className="h-6 w-6" /><span className="text-xs">Adicionar</span></button>
-                     <button onClick={() => setActiveView('reports')} className={`flex flex-col items-center transition-colors ${activeView === 'reports' ? 'text-blue-400' : 'text-gray-300'}`}><ChartBarIcon className="h-6 w-6" /><span className="text-xs">Relatórios</span></button>
-                 </div>
-             </div>
+    const handleSaveBeneficiary = async (name) => {
+        try {
+            const beneficiariesCollectionPath = `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/beneficiaries`;
+            await addDoc(collection(db, beneficiariesCollectionPath), { name });
+            showModal("Sucesso", `Beneficiário "${name}" cadastrado.`);
+            setIsBeneficiaryModalOpen(false);
+        } catch (error) { console.error("Erro ao salvar beneficiário:", error); showModal("Erro", "Não foi possível salvar o beneficiário."); }
+    };
+
+    const handleUpdateBeneficiary = async (id, newName) => {
+        try {
+            const docRef = doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/beneficiaries`, id);
+            await updateDoc(docRef, { name: newName });
+            showModal("Sucesso", "Nome do beneficiário atualizado.");
+        } catch (error) {
+            console.error("Erro ao atualizar beneficiário:", error);
+            showModal("Erro", "Não foi possível atualizar o nome.");
+        }
+    };
+
+    const handleDeleteBeneficiary = async (id, name) => {
+        showModal("Confirmar Exclusão", `Tem certeza que deseja excluir o beneficiário "${name}"? Esta ação não pode ser desfeita.`,
+            async () => {
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/companies/${authenticatedCompany.id}/beneficiaries`, id);
+                    await deleteDoc(docRef);
+                    showModal("Sucesso", "Beneficiário excluído.");
+                } catch (error) {
+                    console.error("Erro ao excluir beneficiário:", error);
+                    showModal("Erro", "Não foi possível excluir o beneficiário.");
+                }
+            }
+        );
+    };
+
+
+    const handleEdit = (closing) => { setEditingDate(closing.date); setActiveView('add'); }
+    const handleAddNew = () => { setEditingDate(null); setActiveView('add'); }
+
+    const renderPage = () => {
+        if (!isAuthReady || loadingConfig) { return <LoadingScreen />; }
+        if (!authenticatedCompany) { return <LoginScreen companies={companies} onLoginSuccess={handleLoginSuccess} />; }
+
+        let currentView;
+        switch (activeView) {
+            case 'add':
+                currentView = <AddClosingScreen onSave={handleSave} onCancel={() => setActiveView('history')} companyId={authenticatedCompany.id} initialDate={editingDate} beneficiaries={beneficiaries} closings={closings} onAddBeneficiary={() => setIsBeneficiaryModalOpen(true)} onManageBeneficiaries={() => setIsManageBeneficiariesModalOpen(true)} showModal={showModal} />;
+                break;
+            case 'reports':
+                currentView = <ReportsScreen closings={closings} beneficiaries={beneficiaries} companyName={authenticatedCompany.name} onLogout={handleLogout} onShowMessage={showModal} exportToPdf={exportToPdf} scriptsReady={scriptsReady} />;
+                break;
+            case 'history':
+            default:
+                currentView = <HistoryScreen closings={closings} onEdit={handleEdit} onDelete={handleDelete} onAddNew={handleAddNew} />;
+                break;
+        }
+
+        return (
+            <div className="relative min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop')" }}>
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+                <div className="relative z-10">
+                    <Header companyName={authenticatedCompany.name} onLogout={handleLogout} />
+                    <div className="pb-16">{currentView}</div>
+                    <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/10 backdrop-blur-lg border-t border-white/20 flex justify-around items-center">
+                        <button onClick={() => setActiveView('history')} className={`flex flex-col items-center transition-colors ${activeView === 'history' ? 'text-blue-400' : 'text-gray-300'}`}><HomeIcon className="h-6 w-6" /><span className="text-xs">Histórico</span></button>
+                        <button onClick={handleAddNew} className={`flex flex-col items-center transition-colors ${activeView === 'add' ? 'text-blue-400' : 'text-gray-300'}`}><PlusCircleIcon className="h-6 w-6" /><span className="text-xs">Adicionar</span></button>
+                        <button onClick={() => setActiveView('reports')} className={`flex flex-col items-center transition-colors ${activeView === 'reports' ? 'text-blue-400' : 'text-gray-300'}`}><ChartBarIcon className="h-6 w-6" /><span className="text-xs">Relatórios</span></button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="App">
+            <style>{`@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap'); .font-accounting { font-family: 'Roboto Mono', monospace; }`}</style>
+            <Modal isOpen={modalState.isOpen} title={modalState.title} message={modalState.message} onConfirm={modalState.onConfirm} onCancel={hideModal} />
+            <BeneficiaryModal isOpen={isBeneficiaryModalOpen} onCancel={() => setIsBeneficiaryModalOpen(false)} onSave={handleSaveBeneficiary} showMessage={showModal} />
+            <ManageBeneficiariesModal isOpen={isManageBeneficiariesModalOpen} onCancel={() => setIsManageBeneficiariesModalOpen(false)} beneficiaries={beneficiaries} onUpdate={handleUpdateBeneficiary} onDelete={handleDeleteBeneficiary} showMessage={showModal} />
+            {renderPage()}
         </div>
-      )
-  }
-
-  return (
-    <div className="App">
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap'); .font-accounting { font-family: 'Roboto Mono', monospace; }`}</style>
-        <Modal isOpen={modalState.isOpen} title={modalState.title} message={modalState.message} onConfirm={modalState.onConfirm} onCancel={hideModal} />
-        <BeneficiaryModal isOpen={isBeneficiaryModalOpen} onCancel={() => setIsBeneficiaryModalOpen(false)} onSave={handleSaveBeneficiary} showMessage={showModal} />
-        <ManageBeneficiariesModal isOpen={isManageBeneficiariesModalOpen} onCancel={() => setIsManageBeneficiariesModalOpen(false)} beneficiaries={beneficiaries} onUpdate={handleUpdateBeneficiary} onDelete={handleDeleteBeneficiary} showMessage={showModal} />
-        {renderPage()}
-    </div>
-  );
+    );
 }
 
