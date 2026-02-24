@@ -734,22 +734,13 @@ function DailyCashFlowReport({ closings, companyName, onShowMessage, scriptsRead
                 }
             });
 
-            // REMOVIDO: Sangrias e Suprimentos não entram mais no relatório de caixa (apenas fluxo de dinheiro 'limpo')
-            /*
-            (c.suprimento || []).forEach(s => {
-                if (s.valor > 0) transactions.push({ date: c.date, description: `Suprimento (${s.responsavel})`, value: s.valor });
-            });
-            */
-
             (c.pagamentosCaixa || []).forEach(f => {
-                // Pagamentos apenas em dinheiro
                 if (f.valor > 0 && (f.formaPagamento === 'dinheiro' || !f.formaPagamento)) {
                     transactions.push({ date: c.date, description: `Pag. Direto: ${f.referente}`, value: -f.valor });
                 }
             });
 
             const totalEntregadoresDinheiro = (c.entregadores || []).reduce((sum, d) => {
-                // Se for dinheiro (ou indefinido, assumindo legado como dinheiro, ou forçamos a escolha no futuro)
                 if (d.formaPagamento === 'dinheiro' || !d.formaPagamento) {
                     return sum + d.diaria + (d.brotas * c.deliveryRates.brotas) + (d.torrinha * c.deliveryRates.torrinha) + (d.retorno * c.deliveryRates.retorno) + (d.outras * c.deliveryRates.outras);
                 }
@@ -757,12 +748,6 @@ function DailyCashFlowReport({ closings, companyName, onShowMessage, scriptsRead
             }, 0);
 
             if (totalEntregadoresDinheiro > 0) transactions.push({ date: c.date, description: 'Pagamento Entregadores (Dinheiro)', value: -totalEntregadoresDinheiro });
-
-            /*
-            (c.sangria || []).forEach(s => {
-                if (s.valor > 0) transactions.push({ date: c.date, description: `Sangria (${s.responsavel})`, value: -s.valor });
-            });
-            */
         }
         return transactions.sort((a, b) => a.date.localeCompare(b.date));
     }, [startDate, endDate, closings]);
